@@ -7,12 +7,18 @@ import { Activity, FolderOpen, AlertTriangle } from 'lucide-react';
 export const Dashboard = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'flex-start',
+        flexWrap: 'wrap',
+        gap: '1rem'
+      }}>
         <div>
           <h1 style={{ color: 'var(--gray-900)', margin: 0 }}>Visão Geral</h1>
           <p style={{ color: 'var(--gray-500)', marginTop: '0.25rem' }}>Acompanhamento em tempo real das bases e projetos.</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <Button variant="secondary">Filtrar</Button>
           <Button variant="primary">Novo Relatório</Button>
         </div>
