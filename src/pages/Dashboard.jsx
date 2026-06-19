@@ -1,71 +1,54 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { BrazilMap } from '../components/map/BrazilMap';
-import { Activity, FolderOpen, AlertTriangle } from 'lucide-react';
+import { Route as RouteIcon, ArrowRight } from 'lucide-react';
+
+/** Catálogo de relatórios disponíveis na plataforma. */
+const RELATORIOS = [
+  {
+    titulo: 'Rotas de Supervisão',
+    descricao:
+      'Locais de serviço ativos por empresa, base operacional e supervisor, com mapa, filtros e exportação.',
+    icone: RouteIcon,
+    rota: '/relatorios/rotas-supervisao',
+    disponivel: true,
+  },
+];
 
 export const Dashboard = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'flex-start',
-        flexWrap: 'wrap',
-        gap: '1rem'
-      }}>
-        <div>
-          <h1 style={{ color: 'var(--gray-900)', margin: 0 }}>Visão Geral</h1>
-          <p style={{ color: 'var(--gray-500)', marginTop: '0.25rem' }}>Acompanhamento em tempo real das bases e projetos.</p>
-        </div>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <Button variant="secondary">Filtrar</Button>
-          <Button variant="primary">Novo Relatório</Button>
-        </div>
-      </div>
-
-      {/* KPIs */}
-      <div className="grid-1-2" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-        <Card>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <p style={{ color: 'var(--gray-500)', fontSize: '0.875rem', fontWeight: 500, margin: 0 }}>Total de Bases</p>
-              <h2 className="mono" style={{ fontSize: '2rem', color: 'var(--blue)', margin: '0.5rem 0 0 0' }}>08</h2>
-            </div>
-            <div style={{ padding: '0.5rem', backgroundColor: 'var(--blue-50)', borderRadius: '8px', color: 'var(--blue)' }}>
-              <Activity size={24} />
-            </div>
-          </div>
-        </Card>
-        
-        <Card>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <p style={{ color: 'var(--gray-500)', fontSize: '0.875rem', fontWeight: 500, margin: 0 }}>Projetos Ativos</p>
-              <h2 className="mono" style={{ fontSize: '2rem', color: 'var(--success)', margin: '0.5rem 0 0 0' }}>52</h2>
-            </div>
-            <div style={{ padding: '0.5rem', backgroundColor: 'var(--success-bg)', borderRadius: '8px', color: 'var(--success)' }}>
-              <FolderOpen size={24} />
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <p style={{ color: 'var(--gray-500)', fontSize: '0.875rem', fontWeight: 500, margin: 0 }}>Alertas Críticos</p>
-              <h2 className="mono" style={{ fontSize: '2rem', color: 'var(--danger)', margin: '0.5rem 0 0 0' }}>01</h2>
-            </div>
-            <div style={{ padding: '0.5rem', backgroundColor: 'var(--danger-bg)', borderRadius: '8px', color: 'var(--danger)' }}>
-              <AlertTriangle size={24} />
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Mapa */}
       <div>
-        <BrazilMap />
+        <h1 style={{ color: 'var(--gray-900)', margin: 0 }}>Plataforma de Relatórios</h1>
+        <p style={{ color: 'var(--gray-500)', marginTop: '0.25rem' }}>
+          Selecione um relatório para visualizar os dados operacionais.
+        </p>
+      </div>
+
+      <div className="kanban-grid">
+        {RELATORIOS.map((r) => {
+          const Icone = r.icone;
+          const conteudo = (
+            <Card style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', cursor: r.disponivel ? 'pointer' : 'default', opacity: r.disponivel ? 1 : 0.6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ padding: '0.6rem', backgroundColor: 'var(--blue-50)', borderRadius: '8px', color: 'var(--blue)' }}>
+                  <Icone size={24} />
+                </div>
+                <h3 style={{ margin: 0, color: 'var(--gray-900)' }}>{r.titulo}</h3>
+              </div>
+              <p style={{ color: 'var(--gray-500)', fontSize: '0.875rem', margin: 0, flex: 1 }}>{r.descricao}</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: r.disponivel ? 'var(--blue)' : 'var(--gray-400)', fontWeight: 600, fontSize: '0.875rem' }}>
+                {r.disponivel ? 'Abrir relatório' : 'Em breve'}
+                {r.disponivel && <ArrowRight size={16} />}
+              </div>
+            </Card>
+          );
+          return r.disponivel ? (
+            <Link key={r.titulo} to={r.rota} style={{ textDecoration: 'none' }}>{conteudo}</Link>
+          ) : (
+            <div key={r.titulo}>{conteudo}</div>
+          );
+        })}
       </div>
     </div>
   );

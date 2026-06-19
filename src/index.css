@@ -45,8 +45,14 @@
   --gray-900: #F8F9FB;
   --white: #1D2939;
   
-  /* Cores Primárias Adaptadas (Opcional, deixando a cor primária mais vibrante em fundos escuros se desejar, mas manteremos o padrão) */
-  --blue-50: #140A8C;
+  /* Cores Primárias Adaptadas para o modo escuro.
+     O azul precisa ficar CLARO para contrastar com os fundos escuros,
+     e o fundo --blue-50 precisa ser um azul escuro (não o mesmo tom do texto). */
+  --blue: #8B7FF7;
+  --blue-light: #A99FFA;
+  --blue-dark: #6C5DF5;
+  --blue-50: #241B5E;
+  --blue-100: #2E2475;
   
   /* Sombras mais fortes no modo escuro */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
@@ -324,4 +330,14 @@ button {
   color: var(--gray-900);
   cursor: pointer;
   padding: 0.5rem;
+}
+
+/* Loader spinner */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
 }

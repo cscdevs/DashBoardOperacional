@@ -1,113 +1,89 @@
-# 🌍 Dashboard Organizacional - Portal CSC
+# Plataforma de Relatórios
 
-Plataforma de visualização e monitoramento geográfico de projetos e bases operacionais. Permite o acompanhamento em tempo real do status das bases espalhadas pelo Brasil, exibição de alertas críticos e KPIs através de um mapa dinâmico no estilo Google Maps.
+Plataforma web para visualização de relatórios operacionais, baseada no design system do
+DashboardOrganizacional (React + Vite + Leaflet). O backend conecta ao **SQL Server**, executa
+as queries dos relatórios e serve os dados para o front.
 
-## 🚀 Como Rodar
+## Primeiro relatório: Rotas de Supervisão
 
-### Pré-requisitos
-Certifique-se de ter o **Node.js 20+** instalado para rodar localmente.
+Locais de serviço ativos por empresa, base operacional e supervisor. Inclui:
 
-### Opção A: Rodar Localmente (Desenvolvimento)
-No terminal, dentro da pasta do projeto:
+- **KPIs**: total de locais, clientes, supervisores e cidades.
+- **Mapa** (Leaflet/OpenStreetMap): pontos agrupados por **cidade/UF**. Como a query não
+  retorna latitude/longitude, as coordenadas vêm de uma tabela fixa
+  (`server/src/geo/coordenadas.js`); cidades não mapeadas usam o centro da UF (marcado como
+  *posição aproximada* no popup).
+- **Filtros**: busca livre + empresa, base operacional, UF e supervisor.
+- **Tabela** com exportação para **CSV** (compatível com Excel).
+
+## Estrutura
+
+```
+DashboardOrganizacional/
+├── src/                          # Frontend (React + Vite)
+│   ├── pages/RotasSupervisao.jsx # Página do relatório
+│   ├── components/map/RotasMap.jsx
+│   └── services/api.js           # Cliente HTTP da API
+├── server/                       # Backend (Express + mssql)
+│   ├── src/server.js             # API + cache em memória
+│   ├── src/db.js                 # Pool de conexão SQL Server
+│   ├── src/reports/
+│   │   ├── rotas-supervisao.sql  # A query
+│   │   └── rotas-supervisao.js   # Normalização + agrupamento p/ mapa
+│   └── src/geo/coordenadas.js    # Coordenadas por cidade/UF
+└── vite.config.js                # Proxy /api -> http://localhost:3001
+```
+
+## Como rodar (desenvolvimento)
+
+Pré-requisito: **Node.js 20+**.
+
+### 1. Backend
 
 ```bash
-npm install --legacy-peer-deps
-npm run dev
+cd server
+cp .env.example .env      # edite com as credenciais do SQL Server
+npm install
+npm run dev               # sobe em http://localhost:3001
 ```
-Acesse no navegador: `http://localhost:5173`.
 
-### Opção B: Portainer + Traefik (Produção)
-Para realizar o build e o deploy na VPS via Portainer:
+Configure o `.env`:
 
-**1. Build das imagens na VPS:** Para contornar restrições do Portainer com a diretiva build, construa as imagens manualmente na VPS primeiro:
+```
+DB_SERVER=...
+DB_PORT=1433
+DB_DATABASE=...
+DB_USER=...
+DB_PASSWORD=...
+DB_ENCRYPT=false
+DB_TRUST_SERVER_CERTIFICATE=true
+PORT=3001
+CACHE_TTL_SECONDS=300
+```
+
+### 2. Frontend
 
 ```bash
-git clone https://github.com/pportztecnologia/DashboardOrganizacional.git
-cd DashboardOrganizacional
-
-# Constrói a imagem do Frontend
-docker build -t dashboard-csc-local:latest .
-
-# Garante que a rede do Traefik exista
-docker network create --attachable pportz 2>/dev/null || true
+npm install
+npm run dev               # sobe em http://localhost:5173
 ```
 
-**2. Stack YAML para o Portainer:** Vá no Portainer -> Stacks -> Add stack. Você pode colar diretamente o conteúdo abaixo ou usar o arquivo `docker-compose.yml`:
+O Vite encaminha `/api/*` para o backend automaticamente (ver `vite.config.js`).
 
-```yaml
-version: '3.8'
+Login de teste (mock, herdado do projeto base): `admin@pportz.com.br` / `admin`.
 
-services:
-  frontend:
-    image: dashboard-csc-local:latest
-    networks:
-      - pportz
-    deploy:
-      restart_policy:
-        condition: on-failure
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.dashboard-csc.rule=Host(`dashboard.csc.pportz.com.br`)"
-        - "traefik.http.routers.dashboard-csc.entrypoints=websecure"
-        - "traefik.http.routers.dashboard-csc.tls=true"
-        - "traefik.http.routers.dashboard-csc.tls.certresolver=letsencryptresolver"
-        - "traefik.http.services.dashboard-csc.loadbalancer.server.port=80"
+## Endpoints da API
 
-networks:
-  pportz:
-    external: true
-```
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/api/health` | Healthcheck |
+| GET | `/api/rotas-supervisao` | Relatório completo (`rotas` + `mapa`). `?mapa=false` omite o agrupamento. |
+| POST | `/api/cache/limpar` | Invalida o cache em memória |
 
-**3. Atualizar deploy no Portainer:** Sempre que fizer um push de novos códigos, acesse a VPS e refaça o build:
+## Adicionando novos relatórios
 
-```bash
-cd DashboardOrganizacional
-git pull origin main
-docker build -t dashboard-csc-local:latest .
-```
-Depois, acesse a stack `dashboard-csc` no Portainer e clique em **Pull and redeploy**.
-
-## 📊 Funcionalidades
-- **Mapa Interativo (Leaflet):** Navegação fluída (zoom/arrasto) pelo mapa do Brasil com a camada OpenStreetMap.
-- **Visualização de Bases:** Marcadores customizados de bases com informações de projetos ativos ao clicar.
-- **Sistema de Status Visual:** Cores padronizadas do Design System (Verde = Normal, Amarelo = Atenção, Vermelho = Crítico).
-- **Indicadores (KPIs):** Contagem dinâmica de bases, projetos e alertas no topo da tela.
-- **Modo Escuro (Dark Mode):** Alternância instantânea de tema no cabeçalho com filtro inteligente que escurece o mapa sem quebrar a paleta visual.
-
-## 🧠 Arquitetura
-
-**Stack:**
-| Camada | Tecnologia |
-|---|---|
-| Frontend | React, Vite, React Router DOM |
-| Mapas | Leaflet, React-Leaflet |
-| Ícones | Lucide React |
-| Deploy | Docker / Portainer + Traefik (Nginx interno) |
-
-**Comunicação (Proxy Reverso):** 
-O Nginx, hospedando a aplicação React construída, intercepta rotas desconhecidas e repassa para `/index.html` garantindo o funcionamento do React Router (SPA).
-
-## 📁 Estrutura
-```text
-├── public/              # Assets estáticos gerais
-├── src/
-│   ├── assets/          # Logos e SVGs do Design System
-│   ├── components/
-│   │   ├── layout/      # Estrutura principal da tela (Sidebar, Header)
-│   │   ├── map/         # Integração com o React-Leaflet
-│   │   └── ui/          # Componentes reutilizáveis (Card, Button)
-│   ├── pages/           # Views principais (Dashboard)
-│   ├── App.jsx          # Rotas principais e gerenciador do Dark Mode
-│   ├── index.css        # Variáveis do Design System e Classes
-│   └── main.jsx         # Entrypoint React
-├── Dockerfile           # Dockerfile Frontend multi-stage (Node -> Nginx)
-├── docker-compose.yml   # Modelo de Stack para Portainer
-├── nginx.conf           # Roteamento do React
-├── package.json
-└── vite.config.js       # Config Vite
-```
-
-## 🔮 Melhorias Futuras
-- **Integração com Backend:** Trocar o array de *Mock Data* do `BrazilMap.jsx` para requisições Fetch/Axios lendo de uma API real.
-- **Telas Internas:** Desenvolver a tabela na página `/usuarios` e gráficos detalhados na visão de relatórios.
-- **Filtros no Mapa:** Adicionar botões para filtrar o mapa apenas por bases em estado de "Alerta".
+1. Crie `server/src/reports/<nome>.sql` e `<nome>.js` (espelhe `rotas-supervisao`).
+2. Exponha um endpoint em `server/src/server.js`.
+3. Crie a página em `src/pages/` e adicione a função no `src/services/api.js`.
+4. Registre a rota em `src/App.jsx` e o item no menu em `src/components/layout/AppLayout.jsx`
+   (e no catálogo em `src/pages/Dashboard.jsx`).
