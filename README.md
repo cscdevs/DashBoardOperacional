@@ -29,7 +29,7 @@ cd DashboardOrganizacional
 docker build -t dashboard-csc-local:latest .
 
 # Garante que a rede do Traefik exista
-docker network create --attachable portz 2>/dev/null || true
+docker network create --attachable pportz 2>/dev/null || true
 ```
 
 **2. Stack YAML para o Portainer:** Vá no Portainer -> Stacks -> Add stack. Você pode colar diretamente o conteúdo abaixo ou usar o arquivo `docker-compose.yml`:
@@ -41,7 +41,7 @@ services:
   frontend:
     image: dashboard-csc-local:latest
     networks:
-      - portz
+      - pportz
     deploy:
       restart_policy:
         condition: on-failure
@@ -54,7 +54,7 @@ services:
         - "traefik.http.services.dashboard-csc.loadbalancer.server.port=80"
 
 networks:
-  portz:
+  pportz:
     external: true
 ```
 

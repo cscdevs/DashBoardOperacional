@@ -34,4 +34,4 @@ services:
 networks:
   pportz: ## Nome da rede interna
     external: true
-    name: portz ## Mantido portz para refletir o "docker network create portz" que você executou
+    name: pportz
