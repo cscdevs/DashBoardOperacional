@@ -1,16 +1,50 @@
-# React + Vite
+# Portal CSC - Dashboard Organizacional
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Bem-vindo ao repositório do **Portal de Transparência de Projetos (Centro de Serviços Compartilhados)**. 
 
-Currently, two official plugins are available:
+Este projeto é uma plataforma web premium, responsiva e dinâmica construída com foco na visualização de dados operacionais e distribuição geográfica através de mapas interativos.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Tecnologias Utilizadas
 
-## React Compiler
+- **React 19** + **Vite**
+- **Leaflet & React-Leaflet** (Mapas interativos OpenStreetMap)
+- **Lucide React** (Ícones SVG)
+- **Vanilla CSS** (Com suporte nativo a Design Tokens e Modo Escuro)
+- **Docker** e **Nginx** (Pronto para Portainer)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🎨 Design System & Modo Escuro
 
-## Expanding the ESLint configuration
+A plataforma foi construída inteiramente sobre um Design System proprietário (documentado no arquivo [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md)). 
+Ela suporta nativamente a inversão de cores inteligente para **Modo Escuro (Dark Mode)**, incluindo a conversão automática do brilho dos mapas de satélite para não prejudicar a visão do usuário.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🐳 Como rodar no Portainer (Produção)
+
+Este projeto já acompanha um `docker-compose.yml` e um `Dockerfile` otimizado em múltiplos estágios (Node para build e Nginx para servir arquivos estáticos de forma ultra-rápida, com rotas tratadas para SPA).
+
+1. Abra seu Portainer.
+2. Acesse **Stacks** > **Add stack**.
+3. Nomeie a stack como `dashboard-csc`.
+4. Você pode apontar diretamente para este repositório do GitHub na opção "Repository", ou colar o conteúdo do arquivo `docker-compose.yml` e alterar a porta `8080` de acordo com a necessidade do seu Proxy Reverso.
+5. Se estiver utilizando Nginx Proxy Manager ou Traefik, basta mapear o domínio `dashboard.csc.pportz.com.br` para o contêiner gerado na porta `80`.
+
+## 💻 Como rodar Localmente (Desenvolvimento)
+
+Certifique-se de ter o **Node.js 20+** instalado em sua máquina.
+
+1. Clone o repositório
+   ```bash
+   git clone https://github.com/pportztecnologia/DashboardOrganizacional.git
+   cd DashboardOrganizacional
+   ```
+
+2. Instale as dependências (Devido a algumas bibliotecas estritas de mapas, utilize a flag de compatibilidade se necessário)
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+
+3. Inicie o servidor de desenvolvimento
+   ```bash
+   npm run dev
+   ```
+
+4. Acesse `http://localhost:5173` no seu navegador.
