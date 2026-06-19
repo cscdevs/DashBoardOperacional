@@ -1,21 +1,37 @@
-version: '3.8'
-
+version: "3.7"
 services:
-  frontend:
-    image: dashboard-csc-local:latest
+
+## --------------------------- DASHBOARD CSC --------------------------- ##
+
+  dashboard_frontend:
+    image: dashboard-csc-local:latest ## Versão do Frontend (Build Local)
+
     networks:
-      - portz
+      - pportz ## Nome da rede interna
+
     deploy:
-      restart_policy:
-        condition: on-failure
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.dashboard-csc.rule=Host(`dashboard.csc.pportz.com.br`)"
-        - "traefik.http.routers.dashboard-csc.entrypoints=websecure"
-        - "traefik.http.routers.dashboard-csc.tls=true"
-        - "traefik.http.routers.dashboard-csc.tls.certresolver=letsencryptresolver"
-        - "traefik.http.services.dashboard-csc.loadbalancer.server.port=80"
+        - traefik.enable=true
+        - traefik.http.routers.dashboard_csc.rule=Host(`dashboard.csc.pportz.com.br`) ## Url do Dashboard
+        - traefik.http.routers.dashboard_csc.entrypoints=websecure
+        - traefik.http.routers.dashboard_csc.priority=10
+        - traefik.http.routers.dashboard_csc.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.dashboard_csc.service=dashboard_frontend
+        - traefik.http.services.dashboard_frontend.loadbalancer.server.port=80
+        - traefik.http.services.dashboard_frontend.loadbalancer.passHostHeader=1
+
+## --------------------------- DASHBOARD CSC --------------------------- ##
 
 networks:
-  portz:
+  pportz: ## Nome da rede interna
     external: true
+    name: portz ## Mantido portz para refletir o "docker network create portz" que você executou
