@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  dashboard-csc:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: dashboard-csc:latest
+    container_name: dashboard-organizacional
+    restart: always
+    ports:
+      - "8080:80" # Acessível externamente na porta 8080 (você pode mapear para a 80/443 no seu Proxy Reverso)
+    # environment:
+    #   - NODE_ENV=production
+    
+    # Se você usar o Nginx Proxy Manager no Portainer, basta apontar o domínio "dashboard.csc.pportz.com.br" para o IP deste container na porta 80.
+    
+    # Se você usar Traefik, descomente e adapte as labels abaixo:
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.dashboard-csc.rule=Host(`dashboard.csc.pportz.com.br`)"
+    #   - "traefik.http.routers.dashboard-csc.entrypoints=websecure"
+    #   - "traefik.http.routers.dashboard-csc.tls.certresolver=myresolver"
+    #   - "traefik.http.services.dashboard-csc.loadbalancer.server.port=80"
+    
+    networks:
+      - proxy-network
+
+networks:
+  proxy-network:
+    external: true # Assume que você tem uma rede externa criada no Portainer para o seu proxy reverso
+    # Se não tiver, comente a linha 'external: true' para criar uma rede local apenas para este stack.
