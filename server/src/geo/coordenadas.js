@@ -208,3 +208,34 @@ export function resolverCoordenada(localidade, uf) {
 
   return null;
 }
+
+/** Distância em km entre dois pontos [lat, lng] (Haversine). */
+export function distanciaKm([lat1, lng1], [lat2, lng2]) {
+  const R = 6371;
+  const rad = (d) => (d * Math.PI) / 180;
+  const dLat = rad(lat2 - lat1);
+  const dLng = rad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+/** Limite (km) a partir do qual a coordenada é considerada longe da cidade. */
+const LIMITE_VALIDACAO_KM = Number(process.env.VALIDACAO_LIMITE_KM) || 60;
+
+/**
+ * Valida uma coordenada [lat, lng] contra a cidade/UF informada no endereço.
+ * Retorna { suspeita, distanciaKm } — suspeita=true quando a coordenada está
+ * muito longe do centro da cidade (provável erro de cadastro). Só valida quando
+ * a cidade é conhecida na base; caso contrário não há como aferir (suspeita=false).
+ */
+export function validarCoordenada(coord, localidade, uf) {
+  if (!Array.isArray(coord)) return { suspeita: false, distanciaKm: null };
+  const ref = resolverCoordenada(localidade, uf);
+  if (!ref || ref.aproximado !== false) {
+    return { suspeita: false, distanciaKm: null }; // sem referência de cidade
+  }
+  const d = distanciaKm(coord, ref.coordinates);
+  return { suspeita: d > LIMITE_VALIDACAO_KM, distanciaKm: Math.round(d) };
+}

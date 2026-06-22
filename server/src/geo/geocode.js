@@ -43,33 +43,96 @@ export function chaveEndereco(r) {
 
 export const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
+/** Normaliza o número, descartando variações de "S/N" (sem número). */
+function numeroLimpo(r) {
+  return r.numero && !/^s\/?n$/i.test(String(r.numero)) ? String(r.numero) : '';
+}
+
 /**
- * Geocodifica um único endereço. Retorna [lat, lng] ou null se não encontrar.
- * Usa busca estruturada (street/city/state/postalcode) que costuma ser mais
- * precisa no Brasil.
+ * Monta o endereço em TEXTO LIVRE para a busca `q=` do Nominatim, juntando
+ * logradouro, número, BAIRRO, cidade, UF e (opcionalmente) CEP. A busca livre
+ * é mais tolerante que a estruturada e o bairro ajuda a desambiguar ruas
+ * homônimas dentro da mesma cidade.
  */
-export async function geocodificar(r) {
-  const numero = r.numero && !/^s\/?n$/i.test(String(r.numero)) ? String(r.numero) : '';
-  const street = [numero, r.logradouro].filter(Boolean).join(' ').trim();
-  const cep = (r.cep || '').replace(/\D/g, '');
+export function montarEnderecoBusca(r, { comCep = true } = {}) {
+  const numero = numeroLimpo(r);
+  const logradouro = [r.logradouro, numero].filter(Boolean).join(', ');
+  const cep = comCep ? (r.cep || '').replace(/\D/g, '') : '';
+  return [logradouro, r.bairro, r.localidade, r.uf, cep, 'Brasil']
+    .map((x) => (x || '').toString().trim())
+    .filter(Boolean)
+    .join(', ');
+}
 
-  const params = new URLSearchParams({
-    city: r.localidade || '',
-    state: r.uf || '',
-    country: 'Brazil',
-    format: 'jsonv2',
-    limit: '1',
-  });
-  if (street) params.set('street', street);
-  if (cep) params.set('postalcode', cep);
-
+/** Dispara uma consulta ao Nominatim e devolve [lat, lng] ou null. */
+async function consultarNominatim(params) {
   const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
   const resp = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
   if (!resp.ok) throw new Error(`Nominatim HTTP ${resp.status}`);
-
   const data = await resp.json();
   if (Array.isArray(data) && data.length > 0) {
     return [Number(data[0].lat), Number(data[0].lon)];
   }
+  return null;
+}
+
+/**
+ * Geocodifica um único endereço. Retorna [lat, lng] ou null se não encontrar.
+ *
+ * Tenta várias estratégias em cascata, da mais precisa para a mais tolerante,
+ * parando na primeira que resolver:
+ *   1) Estruturada com CEP   (logradouro/cidade/UF/CEP)
+ *   2) Texto livre com bairro + CEP
+ *   3) Texto livre com bairro, sem CEP (o CEP às vezes é genérico/errado)
+ *   4) Estruturada sem CEP
+ *
+ * Entre cada tentativa há uma pausa (`delayMs`) para respeitar o limite de
+ * ~1 requisição/segundo do Nominatim.
+ */
+export async function geocodificar(r, { delayMs = 1100 } = {}) {
+  const street = [numeroLimpo(r), r.logradouro].filter(Boolean).join(' ').trim();
+  const cep = (r.cep || '').replace(/\D/g, '');
+  // ATENÇÃO: o Nominatim devolve HTTP 400 se a busca em texto livre (q) for
+  // misturada com parâmetros estruturados (country/city/...). Por isso cada
+  // tipo de estratégia monta seus próprios params, sem compartilhar campos.
+  const base = { format: 'jsonv2', limit: '1' };
+
+  const estrategias = [];
+
+  // 1) Estruturada com CEP (mais precisa quando há logradouro + CEP)
+  if (street && cep) {
+    estrategias.push(
+      new URLSearchParams({ ...base, country: 'Brazil', street, city: r.localidade || '', state: r.uf || '', postalcode: cep })
+    );
+  }
+
+  // 2 e 3) Texto livre, com e sem CEP (inclui o bairro; sem params estruturados)
+  const qComCep = montarEnderecoBusca(r, { comCep: true });
+  const qSemCep = montarEnderecoBusca(r, { comCep: false });
+  estrategias.push(new URLSearchParams({ ...base, q: qComCep }));
+  if (qSemCep !== qComCep) {
+    estrategias.push(new URLSearchParams({ ...base, q: qSemCep }));
+  }
+
+  // 4) Estruturada sem CEP
+  if (street) {
+    estrategias.push(new URLSearchParams({ ...base, country: 'Brazil', street, city: r.localidade || '', state: r.uf || '' }));
+  }
+
+  // Tenta cada estratégia; um erro pontual (ex.: HTTP 400/timeout) numa delas
+  // não aborta as demais. Só propaga se TODAS falharem por erro.
+  let ultimoErro = null;
+  let algumaRespondeu = false;
+  for (let i = 0; i < estrategias.length; i++) {
+    if (i > 0) await sleep(delayMs); // respeita o limite de ~1 req/seg do Nominatim
+    try {
+      const coord = await consultarNominatim(estrategias[i]);
+      algumaRespondeu = true;
+      if (coord) return coord;
+    } catch (e) {
+      ultimoErro = e;
+    }
+  }
+  if (!algumaRespondeu && ultimoErro) throw ultimoErro;
   return null;
 }

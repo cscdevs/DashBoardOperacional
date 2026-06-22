@@ -18,16 +18,16 @@ const navLinkStyle = ({ isActive }) => ({
 });
 
 export const AppLayout = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const salvo = localStorage.getItem('tema');
+    return salvo ? salvo === 'dark' : true; // padrão: modo escuro
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { logout, user } = useAuth();
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('tema', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);

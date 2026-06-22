@@ -7,6 +7,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { Card } from '../ui/Card';
 import { corDoSupervisor } from '../../utils/cores';
+import { tituloCase } from '../../utils/texto';
 
 const esc = (s) =>
   (s ?? '').toString().replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -16,8 +17,8 @@ const iconePorCor = (cor) =>
     className: 'custom-leaflet-marker',
     html: `<div style="
         width:18px;height:18px;border-radius:50%;
-        background:${cor};border:2px solid #fff;
-        box-shadow:0 0 0 1px rgba(0,0,0,0.25);"></div>`,
+        background:${cor};border:2px solid #000;
+        box-shadow:0 0 0 1.5px #fff;"></div>`,
     iconSize: [18, 18],
     iconAnchor: [9, 9],
     popupAnchor: [0, -9],
@@ -27,13 +28,15 @@ const popupHtml = (r, cor) => `
   <div style="min-width:220px">
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
       <span style="width:10px;height:10px;border-radius:50%;background:${cor};display:inline-block"></span>
-      <strong style="color:#1B0DAE">${esc(r.supervisor || 'Sem supervisor')}</strong>
+      <strong style="color:#1B0DAE">${esc(r.supervisorNome ? tituloCase(r.supervisorNome) : 'Sem supervisor')}</strong>
     </div>
-    <div style="font-size:13px;color:#344054;font-weight:600">${esc(r.local || r.cliente || '')}</div>
-    <div style="font-size:12px;color:#6B7588;margin-top:4px">${esc(r.enderecoCompleto || '')}</div>
+    <div style="font-size:13px;color:#344054;font-weight:600">${esc(tituloCase(r.local || r.cliente || ''))}</div>
+    ${(r.clienteResumido || r.cliente) ? `<div style="font-size:12px;color:#6B7588;margin-top:2px">Cliente: ${esc(tituloCase(r.clienteResumido || r.cliente))}</div>` : ''}
+    <div style="font-size:12px;color:#6B7588;margin-top:4px">${esc(tituloCase(r.enderecoCompleto || ''))}</div>
     ${r.telefone ? `<div style="font-size:12px;color:#6B7588;margin-top:4px">📞 ${esc(r.telefone)}</div>` : ''}
-    ${r.baseOperacional ? `<div style="font-size:12px;color:#6B7588">Base: ${esc(r.baseOperacional)}</div>` : ''}
-    ${!r.coordenadaPrecisa ? `<div style="font-size:11px;color:#B06000;margin-top:6px">* Posição aproximada (centro da cidade) — endereço ainda não geocodificado</div>` : ''}
+    ${r.baseOperacional ? `<div style="font-size:12px;color:#6B7588">Base: ${esc(tituloCase(r.baseOperacional))}</div>` : ''}
+    ${!r.coordenadaPrecisa ? `<div style="font-size:11px;color:#B06000;margin-top:6px">* Posição aproximada (centro da cidade)</div>` : ''}
+    ${r.coordenadaSuspeita ? `<div style="font-size:11px;color:#B42318;margin-top:6px">⚠ Coordenada a ${r.distanciaCidadeKm} km de ${esc(tituloCase(r.localidade || 'cidade informada'))} — verificar cadastro</div>` : ''}
   </div>`;
 
 /** Componente imperativo que cria o cluster de marcadores. */
@@ -49,7 +52,7 @@ function ClusterLayer({ rotas, coresPorSupervisor }) {
 
     rotas.forEach((r) => {
       if (!r.coordinates) return;
-      const cor = corDoSupervisor(r.supervisor, coresPorSupervisor);
+      const cor = corDoSupervisor(r.supervisorNome, coresPorSupervisor);
       const marker = L.marker(r.coordinates, { icon: iconePorCor(cor) });
       marker.bindPopup(popupHtml(r, cor));
       group.addLayer(marker);

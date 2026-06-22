@@ -12,9 +12,10 @@ export const COR_SEM_SUPERVISOR = '#98A1B3'; // cinza p/ locais sem supervisor
 
 function corPorIndice(i) {
   const hue = (i * ANGULO_AUREO) % 360;
-  // Alterna saturação/luminosidade levemente p/ separar ainda mais tons próximos.
-  const sat = 65 + (i % 3) * 8; // 65, 73, 81
-  const lig = 42 + (i % 2) * 8; // 42, 50
+  // Saturação alta = cores vivas/chamativas; alterna levemente p/ separar
+  // tons próximos. Luminosidade média p/ não "lavar" verdes/amarelos.
+  const sat = 85 + (i % 2) * 13; // 85, 98
+  const lig = 45 + (i % 3) * 4; // 45, 49, 53
   return `hsl(${hue.toFixed(1)}, ${sat}%, ${lig}%)`;
 }
 

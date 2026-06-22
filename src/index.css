@@ -242,6 +242,49 @@ button {
   animation: fadeIn 0.5s ease forwards;
 }
 
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.pop-in {
+  animation: popIn 0.16s ease-out forwards;
+  transform-origin: top right;
+}
+
+.legenda-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.35rem 0.45rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.legenda-item:hover {
+  background-color: var(--gray-100);
+}
+
+.legenda-item.ativo {
+  background-color: var(--blue-50);
+  color: var(--blue);
+  font-weight: 600;
+}
+
 /* 7. Layout Principal (Responsivo) */
 .layout-wrapper {
   display: flex;

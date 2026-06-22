@@ -6,6 +6,9 @@
  * - Busca as rotas no banco, deduplica por endereço e geocodifica via Nominatim
  *   (respeitando ~1 req/seg). Salva o progresso em geo/geocache.json a cada 20.
  * - Pode ser interrompido e retomado: endereços já no cache são pulados.
+ * - GEOCODE_RETRY_NULOS=1 reprocessa os endereços que falharam antes (valor
+ *   null no cache), úteis após melhorar a estratégia de geocodificação, sem
+ *   refazer os que já têm coordenada.
  */
 import { buscarRotas } from '../reports/rotas-supervisao.js';
 import {
@@ -18,6 +21,7 @@ import {
 } from '../geo/geocode.js';
 
 const INTERVALO_MS = Number(process.env.GEOCODE_INTERVALO_MS) || 1100;
+const RETENTAR_NULOS = /^(1|true|sim)$/i.test(process.env.GEOCODE_RETRY_NULOS || '');
 
 async function main() {
   console.log('[geocode] Buscando rotas no banco...');
@@ -32,9 +36,12 @@ async function main() {
   const chaves = [...porChave.keys()];
 
   const cache = carregarCache();
-  const pendentes = chaves.filter((k) => cache[k] === undefined);
+  const pendentes = chaves.filter(
+    (k) => cache[k] === undefined || (RETENTAR_NULOS && cache[k] === null)
+  );
 
-  console.log(`[geocode] ${rotas.length} locais | ${chaves.length} endereços únicos | ${pendentes.length} a geocodificar`);
+  const modo = RETENTAR_NULOS ? ' (reprocessando falhas anteriores)' : '';
+  console.log(`[geocode] ${rotas.length} locais | ${chaves.length} endereços únicos | ${pendentes.length} a geocodificar${modo}`);
   const estimativaMin = Math.ceil((pendentes.length * INTERVALO_MS) / 60000);
   console.log(`[geocode] Estimativa: ~${estimativaMin} min. Cache: ${CACHE_PATH}`);
 
@@ -42,7 +49,7 @@ async function main() {
   for (const k of pendentes) {
     const r = porChave.get(k);
     try {
-      const coord = await geocodificar(r);
+      const coord = await geocodificar(r, { delayMs: INTERVALO_MS });
       cache[k] = coord;
       coord ? ok++ : falhas++;
     } catch (e) {
