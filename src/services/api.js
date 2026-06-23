@@ -6,7 +6,7 @@
 
 const BASE_URL = import.meta.env.VITE_API_URL || '';
 
-async function getJSON(path) {
+export async function getJSON(path) {
   const resp = await fetch(`${BASE_URL}${path}`);
   if (!resp.ok) {
     let detalhe = '';
@@ -19,11 +19,6 @@ async function getJSON(path) {
     throw new Error(detalhe || `Erro ${resp.status} ao acessar ${path}`);
   }
   return resp.json();
-}
-
-/** Relatório de Rotas de Supervisão (rotas + agrupamento p/ mapa). */
-export function fetchRotasSupervisao() {
-  return getJSON('/api/rotas-supervisao');
 }
 
 export function fetchHealth() {

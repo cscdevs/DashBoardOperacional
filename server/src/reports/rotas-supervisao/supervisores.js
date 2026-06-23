@@ -191,3 +191,31 @@ export function resolverSupervisor(raw) {
   }
   return raw.toString().trim(); // desconhecido: mantém visível p/ ser mapeado
 }
+
+/** Nomes de supervisor distintos (valores não-nulos do de-para). */
+export const NOMES_SUPERVISORES = [...new Set(Object.values(MAPA_SUPERVISORES).filter(Boolean))];
+
+// Pré-tokeniza os nomes p/ casar o nome COMPLETO do funcionário (vindo do BDV,
+// ex.: "CARLA SANTANA DA SILVA") com o nome CURTO do supervisor do relatório
+// (ex.: "CARLA"). Ordena do mais específico (mais tokens) para o menos, para
+// "DANIEL VIEIRA" ganhar de "DANIEL".
+const SUP_TOKENS = NOMES_SUPERVISORES
+  .map((nome) => ({ nome, tokens: normalizarRotulo(nome).split(' ').filter(Boolean) }))
+  .sort((a, b) => b.tokens.length - a.tokens.length);
+
+/**
+ * Casa o nome completo do funcionário com o nome curto do supervisor quando os
+ * tokens do supervisor são prefixo do nome completo (ex.: "WELLINGTON RAMOS
+ * DAMASCENO" -> "WELLINGTON"). Retorna null se não casar com nenhum supervisor
+ * conhecido (o chamador então usa o próprio nome do funcionário).
+ */
+export function casarSupervisorPorNome(nomeCompleto) {
+  const tks = normalizarRotulo(nomeCompleto).split(' ').filter(Boolean);
+  if (!tks.length) return null;
+  for (const { nome, tokens } of SUP_TOKENS) {
+    if (tokens.length <= tks.length && tokens.every((t, i) => t === tks[i])) {
+      return nome;
+    }
+  }
+  return null;
+}

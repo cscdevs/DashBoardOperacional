@@ -15,7 +15,7 @@
  * então funciona com IP dinâmico e sem abrir porta nenhuma na empresa.
  */
 import 'dotenv/config';
-import { buscarRotas } from '../reports/rotas-supervisao.js';
+import { buscarRotas } from '../reports/rotas-supervisao/rotas-supervisao.js';
 import { getPool } from './supabase-db.js';
 
 const TAMANHO_LOTE = Number(process.env.SYNC_BATCH_SIZE) || 500;

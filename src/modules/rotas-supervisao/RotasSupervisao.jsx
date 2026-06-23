@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { RotasMap } from '../components/map/RotasMap';
-import { fetchRotasSupervisao } from '../services/api';
-import { mapaDeCores, corDoSupervisor } from '../utils/cores';
-import { tituloCase } from '../utils/texto';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { RotasMap } from './components/RotasMap';
+import { fetchRotasSupervisao, fetchPosicoesVeiculos, fetchTrajetoVeiculo } from './api';
+import { mapaDeCores, corDoSupervisor } from './utils/cores';
+import { tituloCase } from '../../utils/texto';
+import { ehLocalEspecial } from '../../utils/locais';
 import {
   Building2,
   MapPin,
@@ -17,6 +18,7 @@ import {
   Loader2,
   Palette,
   Check,
+  Car,
 } from 'lucide-react';
 
 const KpiCard = ({ titulo, valor, icone: Icone, cor = 'var(--blue)', fundo = 'var(--blue-50)' }) => (
@@ -93,6 +95,18 @@ export const RotasSupervisao = () => {
   const [fCliente, setFCliente] = useState('');
   const [fSupervisor, setFSupervisor] = useState('');
   const [ocultarSemSupervisor, setOcultarSemSupervisor] = useState(false);
+
+  // Veículos ao vivo (rastreamento STC)
+  const [mostrarVeiculos, setMostrarVeiculos] = useState(false);
+  const [apenasCarros, setApenasCarros] = useState(false); // oculta as locais
+  const [soSupervisao, setSoSupervisao] = useState(true);
+  const [veiculos, setVeiculos] = useState([]);
+  const [veiculosAtualizadoEm, setVeiculosAtualizadoEm] = useState(null);
+  const [erroVeiculos, setErroVeiculos] = useState(null);
+  const [placaSelecionada, setPlacaSelecionada] = useState(null);
+  const [trajeto, setTrajeto] = useState(null);
+  const [trajetoHoras, setTrajetoHoras] = useState(24); // período do rastro
+
   const [mostrarLegenda, setMostrarLegenda] = useState(false);
   const [legendaPos, setLegendaPos] = useState(null);
   const legendaRef = useRef(null); // wrapper do botão
@@ -152,6 +166,65 @@ export const RotasSupervisao = () => {
     };
   }, []);
 
+  // A camada de carros fica ativa se ligada explicitamente OU no modo "só carros".
+  const carrosAtivos = mostrarVeiculos || apenasCarros;
+
+  // Posição ao vivo dos veículos: busca quando a camada está ativa e re-busca a
+  // cada 60s. O backend tem cache curto próprio (~45s).
+  useEffect(() => {
+    if (!carrosAtivos) return;
+    let ativo = true;
+    const carregar = () => {
+      fetchPosicoesVeiculos()
+        .then((data) => {
+          if (!ativo) return;
+          setVeiculos(data.veiculos || []);
+          setVeiculosAtualizadoEm(data.atualizadoEm || null);
+          setErroVeiculos(null);
+        })
+        .catch((e) => ativo && setErroVeiculos(e.message));
+    };
+    carregar();
+    const id = setInterval(carregar, 60000);
+    return () => {
+      ativo = false;
+      clearInterval(id);
+    };
+  }, [carrosAtivos]);
+
+  // Carrega o rastro (trajeto 24h) sempre que houver uma viatura selecionada.
+  // A limpeza do rastro é feita nos handlers (não no effect), p/ evitar
+  // setState dentro do corpo do efeito.
+  useEffect(() => {
+    if (!placaSelecionada) return;
+    let ativo = true;
+    const carregar = () =>
+      fetchTrajetoVeiculo(placaSelecionada, trajetoHoras)
+        .then((d) => ativo && setTrajeto(d))
+        .catch(() => ativo && setTrajeto(null));
+    carregar();
+    // Auto-atualiza o rastro (incremental no backend, então é rápido).
+    const id = setInterval(carregar, 60000);
+    return () => {
+      ativo = false;
+      clearInterval(id);
+    };
+  }, [placaSelecionada, trajetoHoras]);
+
+  // Liga/desliga a camada de veículos; ao alternar, limpa seleção e rastro.
+  const alternarVeiculos = useCallback(() => {
+    setMostrarVeiculos((on) => !on);
+    setPlacaSelecionada(null);
+    setTrajeto(null);
+  }, []);
+
+  // Seleciona/deseleciona uma viatura. Estável p/ não recriar os marcadores a
+  // cada render. Limpa o rastro anterior; o effect recarrega se houver seleção.
+  const aoSelecionarVeiculo = useCallback((placa) => {
+    setPlacaSelecionada((atual) => (atual === placa ? null : placa));
+    setTrajeto(null);
+  }, []);
+
   // Cores e listas usam o NOME do supervisor (não o rótulo da rota), e o
   // "Sem supervisor" não recebe cor própria (fica cinza no mapa).
   const coresPorSupervisor = useMemo(
@@ -174,6 +247,8 @@ export const RotasSupervisao = () => {
   const rotasFiltradasBase = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return rotas.filter((r) => {
+      // Locais de Abandono/Afastamento/Faltante são sempre excluídos.
+      if (ehLocalEspecial(r.localResumido) || ehLocalEspecial(r.local)) return false;
       if (fEmpresa && r.empresa !== fEmpresa) return false;
       if (fBase && r.baseOperacional !== fBase) return false;
       if (fCliente && r.clienteResumido !== fCliente) return false;
@@ -212,6 +287,13 @@ export const RotasSupervisao = () => {
     () => valoresUnicos(rotasFiltradasBase, 'supervisorNome').filter((n) => n !== SEM_SUPERVISOR),
     [rotasFiltradasBase]
   );
+
+  // Veículos a exibir no mapa: nada se a camada está desligada; senão todos ou
+  // só os que estão em uso por um supervisor (BDV aberto).
+  const veiculosNoMapa = useMemo(() => {
+    if (!carrosAtivos) return [];
+    return soSupervisao ? veiculos.filter((v) => v.emUso) : veiculos;
+  }, [carrosAtivos, soSupervisao, veiculos]);
 
   const limparFiltros = () => {
     setBusca('');
@@ -309,8 +391,58 @@ export const RotasSupervisao = () => {
               </span>
             </Button>
           </div>
+          <Button
+            variant={mostrarVeiculos ? 'primary' : 'secondary'}
+            onClick={alternarVeiculos}
+            title="Mostra a posição atual dos veículos no mapa (rastreamento), atualizada a cada 60s"
+          >
+            <Car size={16} /> {mostrarVeiculos ? 'Veículos: ligado' : 'Veículos ao vivo'}
+          </Button>
+          <Button
+            variant={apenasCarros ? 'primary' : 'secondary'}
+            onClick={() => setApenasCarros((v) => !v)}
+            title="Alterna entre ver os endereços (locais) e ver apenas os carros no mapa"
+          >
+            {apenasCarros ? <MapPin size={16} /> : <Car size={16} />}
+            {apenasCarros ? 'Ver endereços' : 'Só os carros'}
+          </Button>
           <Button variant="secondary" onClick={limparFiltros}>Limpar</Button>
         </div>
+        {carrosAtivos && (
+          <div style={{ marginTop: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.75rem 1.25rem', alignItems: 'center', fontSize: '0.8rem', color: erroVeiculos ? 'var(--danger)' : 'var(--gray-500)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', userSelect: 'none', color: 'var(--gray-700)' }}>
+              <input type="checkbox" checked={soSupervisao} onChange={(e) => setSoSupervisao(e.target.checked)} />
+              Só viaturas de supervisão
+            </label>
+            <span>
+              {erroVeiculos
+                ? `Falha ao carregar veículos: ${erroVeiculos}`
+                : `🚗 ${veiculosNoMapa.length} no mapa${veiculosAtualizadoEm ? ` · atualizado ${new Date(veiculosAtualizadoEm).toLocaleTimeString('pt-BR')}` : ' · carregando...'}`}
+            </span>
+            {placaSelecionada && (
+              <span style={{ color: 'var(--blue)', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                🛣️ Rastro: {placaSelecionada}
+                <select
+                  value={trajetoHoras}
+                  onChange={(e) => setTrajetoHoras(Number(e.target.value))}
+                  style={{ ...selectStyle, minWidth: 0, padding: '0.2rem 0.4rem', fontSize: '0.8rem' }}
+                >
+                  <option value={6}>últimas 6h</option>
+                  <option value={12}>últimas 12h</option>
+                  <option value={24}>últimas 24h</option>
+                  <option value={48}>últimos 2 dias</option>
+                  <option value={72}>últimos 3 dias</option>
+                  <option value={168}>últimos 7 dias</option>
+                </select>
+                {trajeto?.pontos
+                  ? `(${trajeto.pontos.length} pontos · ${trajeto.kmPercorrido ?? 0} km)`
+                  : 'carregando...'}
+                {' · '}
+                <a href="#" onClick={(e) => { e.preventDefault(); setPlacaSelecionada(null); }} style={{ color: 'var(--blue)' }}>limpar</a>
+              </span>
+            )}
+          </div>
+        )}
       </Card>
 
       {/* KPIs */}
@@ -322,7 +454,15 @@ export const RotasSupervisao = () => {
       </div>
 
       {/* Mapa */}
-      <RotasMap rotas={rotasFiltradas} coresPorSupervisor={coresPorSupervisor} />
+      <RotasMap
+        rotas={rotasFiltradas}
+        coresPorSupervisor={coresPorSupervisor}
+        veiculos={veiculosNoMapa}
+        placaSelecionada={placaSelecionada}
+        trajeto={trajeto}
+        onSelecionarVeiculo={aoSelecionarVeiculo}
+        mostrarLocais={!apenasCarros}
+      />
 
       {/* Legenda clicável — popover via portal (sempre acima do mapa) */}
       {mostrarLegenda && legendaPos && supervisoresVisiveis.length > 0 &&

@@ -4,8 +4,8 @@
  * Usado pelo backend no VPS (DATA_SOURCE=supabase). Devolve exatamente o mesmo
  * formato de `buscarRotas` (do SQL Server), então o frontend não muda.
  */
-import { query } from '../sync/supabase-db.js';
-import { validarCoordenada } from '../geo/coordenadas.js';
+import { query } from '../../sync/supabase-db.js';
+import { validarCoordenada } from '../../geo/coordenadas.js';
 
 export async function buscarRotasDaNuvem() {
   const { rows } = await query(

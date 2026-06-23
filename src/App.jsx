@@ -2,7 +2,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { Dashboard } from './pages/Dashboard';
-import { RotasSupervisao } from './pages/RotasSupervisao';
+import { RotasSupervisao } from './modules/rotas-supervisao/RotasSupervisao';
+import { FluxoAtestadosFaltas } from './modules/fluxo-atestados-faltas/FluxoAtestadosFaltas';
 import { Login } from './pages/Login';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -27,6 +28,7 @@ function AppRoutes() {
       }>
         <Route index element={<Dashboard />} />
         <Route path="relatorios/rotas-supervisao" element={<RotasSupervisao />} />
+        <Route path="relatorios/fluxo-atestados-faltas" element={<FluxoAtestadosFaltas />} />
         <Route path="usuarios" element={<div style={{padding: '2rem'}}><h1>Gestão de Usuários em Breve</h1></div>} />
       </Route>
     </Routes>

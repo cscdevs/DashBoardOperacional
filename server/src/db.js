@@ -48,10 +48,18 @@ export function getPool() {
 
 /**
  * Executa uma query e retorna os recordsets.
+ *
+ * `params` (opcional) é um objeto { nome: valor } que vira parâmetros do
+ * comando (ex.: { DATAINICIAL: new Date(...) } liga o @DATAINICIAL do SQL).
+ * O mssql infere o tipo a partir do valor JS.
  */
-export async function query(sqlText) {
+export async function query(sqlText, params = {}) {
   const pool = await getPool();
-  const result = await pool.request().query(sqlText);
+  const request = pool.request();
+  for (const [nome, valor] of Object.entries(params)) {
+    request.input(nome, valor);
+  }
+  const result = await request.query(sqlText);
   return result.recordset;
 }
 

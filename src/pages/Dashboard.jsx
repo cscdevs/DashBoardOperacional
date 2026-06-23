@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
-import { Route as RouteIcon, ArrowRight } from 'lucide-react';
+import { Route as RouteIcon, FileText, ArrowRight } from 'lucide-react';
 
 /** Catálogo de relatórios disponíveis na plataforma. */
 const RELATORIOS = [
@@ -11,6 +11,14 @@ const RELATORIOS = [
       'Locais de serviço ativos por empresa, base operacional e supervisor, com mapa, filtros e exportação.',
     icone: RouteIcon,
     rota: '/relatorios/rotas-supervisao',
+    disponivel: true,
+  },
+  {
+    titulo: 'Fluxo de Atestados / Faltas',
+    descricao:
+      'Atestados, faltas por cliente e faltas disciplinares por período, com KPIs, gráficos, flag de demitidos e exportação.',
+    icone: FileText,
+    rota: '/relatorios/fluxo-atestados-faltas',
     disponivel: true,
   },
 ];

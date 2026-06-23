@@ -10,7 +10,7 @@
  *   null no cache), úteis após melhorar a estratégia de geocodificação, sem
  *   refazer os que já têm coordenada.
  */
-import { buscarRotas } from '../reports/rotas-supervisao.js';
+import { buscarRotas } from '../reports/rotas-supervisao/rotas-supervisao.js';
 import {
   carregarCache,
   salvarCache,

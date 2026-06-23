@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { query } from '../db.js';
-import { resolverCoordenada, validarCoordenada } from '../geo/coordenadas.js';
-import { carregarCache, chaveEndereco } from '../geo/geocode.js';
+import { query } from '../../db.js';
+import { resolverCoordenada, validarCoordenada } from '../../geo/coordenadas.js';
+import { carregarCache, chaveEndereco } from '../../geo/geocode.js';
 import { resolverSupervisor } from './supervisores.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
