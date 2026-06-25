@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import 'dotenv/config';
 import { buscarRotas } from './reports/rotas-supervisao/rotas-supervisao.js';
 import { buscarRotasDaNuvem } from './reports/rotas-supervisao/rotas-supervisao-nuvem.js';
@@ -17,6 +18,7 @@ const DATA_SOURCE = (process.env.DATA_SOURCE || 'sqlserver').toLowerCase();
 const lerRotas = DATA_SOURCE === 'supabase' ? buscarRotasDaNuvem : buscarRotas;
 console.log(`[api] Fonte de dados: ${DATA_SOURCE}`);
 
+app.use(compression()); // gzip: respostas grandes (ex.: 31 MB) caem para ~3 MB
 app.use(cors());
 app.use(express.json());
 
