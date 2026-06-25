@@ -6,25 +6,53 @@ export const PALETA = [
   '#EC4899', '#14B8A6', '#F97316', '#1B0DAE', '#64748B',
 ];
 
+/**
+ * Paleta CATEGÓRICA (1 cor por entidade, ex.: gerente). Evita o verde/vermelho
+ * de status para não sugerir "bom/ruim" e tem cores suficientes p/ ~16 grupos.
+ */
+export const PALETA_CAT = [
+  '#2563EB', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6',
+  '#F97316', '#0EA5E9', '#A855F7', '#84CC16', '#DB2777',
+  '#0D9488', '#EAB308', '#6366F1', '#FB7185', '#06B6D4',
+  '#9333EA', '#65A30D', '#E11D48', '#64748B', '#7C3AED',
+];
+
 const corPorIndice = (i) => PALETA[i % PALETA.length];
+
+/**
+ * Cor categórica ESTÁVEL a partir de um rótulo: o mesmo nome (ex.: gerente)
+ * recebe sempre a mesma cor, independente da ordem/filtro do gráfico.
+ */
+export function corDeRotulo(rotulo) {
+  const s = String(rotulo ?? '');
+  let h = 0;
+  for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return PALETA_CAT[h % PALETA_CAT.length];
+}
 const fmt = (n) => Number(n ?? 0).toLocaleString('pt-BR');
 const pct = (f) => `${Math.round((f ?? 0) * 100)}%`;
 const SemDados = () => <p style={{ color: 'var(--gray-400)', fontSize: '0.85rem', margin: 0 }}>Sem dados para os filtros atuais.</p>;
 
-/** Barras horizontais. `data` = [{ label, value }]. Bom para rankings. */
+/**
+ * Barras horizontais. `data` = [{ label, value }]. Bom para rankings.
+ * `cor` pode ser uma string (cor única), um array (cor por índice) ou uma
+ * função `(d, i) => cor` — útil para 1 cor por categoria (ex.: por gerente).
+ */
 export function BarChart({ data = [], cor = 'var(--blue)', maxBarras = 12 }) {
   const linhas = data.slice(0, maxBarras);
   const max = Math.max(...linhas.map((d) => d.value), 1);
   if (linhas.length === 0) return <SemDados />;
+  const corDa = (d, i) =>
+    typeof cor === 'function' ? cor(d, i) : Array.isArray(cor) ? cor[i % cor.length] : cor;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      {linhas.map((d) => (
+      {linhas.map((d, i) => (
         <div key={d.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span title={d.label} style={{ width: '40%', flexShrink: 0, fontSize: '0.8rem', color: 'var(--gray-700)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>
             {d.label}
           </span>
           <div style={{ flex: 1, background: 'var(--gray-100)', borderRadius: '4px', height: '18px' }}>
-            <div style={{ width: `${(d.value / max) * 100}%`, height: '100%', background: cor, borderRadius: '4px', minWidth: '2px', transition: 'width 0.3s ease' }} />
+            <div style={{ width: `${(d.value / max) * 100}%`, height: '100%', background: corDa(d, i), borderRadius: '4px', minWidth: '2px', transition: 'width 0.3s ease' }} />
           </div>
           <span className="mono" style={{ width: '52px', flexShrink: 0, fontSize: '0.8rem', color: 'var(--gray-900)', fontWeight: 600, textAlign: 'right' }}>
             {fmt(d.value)}

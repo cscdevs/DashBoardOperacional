@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { query } from '../../db.js';
 import { carregarDemitidos, marcarDemitidos } from '../../shared/demitidos.js';
+import { marcarGerentes } from '../../shared/gerentes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SQL_PATH = join(__dirname, 'geracao-cartao-ponto.sql');
@@ -66,5 +67,7 @@ export async function buscarGeracaoCartaoPonto() {
     query(sql, { ANOMESINI: ini, ANOMESFIM: fim }),
     carregarDemitidos(),
   ]);
-  return marcarDemitidos(rows.map(normalizar), demitidos);
+  // Enriquece cada linha com `ehDemitido` (RE+Empresa) e `gerente`
+  // (Empresa+Cliente+Local+Área, via de-para da planilha do BI).
+  return marcarGerentes(marcarDemitidos(rows.map(normalizar), demitidos));
 }

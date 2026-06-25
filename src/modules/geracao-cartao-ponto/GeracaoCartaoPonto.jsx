@@ -3,14 +3,14 @@ import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { fetchGeracaoCartaoPonto } from './api';
-import { BarChart, DonutChart, ColumnChart, Gauge, TabelaResumo } from './components/Charts';
+import { BarChart, DonutChart, ColumnChart, Gauge, TabelaResumo, corDeRotulo } from './components/Charts';
 import {
   medidas, resumoPor, distribuicaoStatus, pendenciasPorCompetencia, competencias,
   valoresUnicos, exibir, formatarData, baixarCSV, ehDescartavel,
 } from './utils/dados';
 import {
   CalendarClock, CheckCircle2, Clock, Percent, Search, Loader2, Download,
-  AlertTriangle, LayoutGrid, ListChecks, UserCog, Info,
+  AlertTriangle, LayoutGrid, ListChecks, UserCog,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -33,6 +33,7 @@ const ABAS = [
 /* Filtros extra da aba Detalhado (selects). */
 const FILTROS_DETALHE = [
   { rotulo: 'Cliente', campo: 'cliente', formatar: true },
+  { rotulo: 'Gerente', campo: 'gerente', formatar: true },
   { rotulo: 'Supervisor', campo: 'areaSupervisao', formatar: true },
   { rotulo: 'Posto', campo: 'local', formatar: true },
   { rotulo: 'Turno', campo: 'turno', formatar: true },
@@ -46,6 +47,7 @@ const COLS_DETALHE = [
   { chave: 're', titulo: 'RE' },
   { chave: 'nome', titulo: 'Funcionário', fmt: exibir },
   { chave: 'cliente', titulo: 'Cliente', fmt: exibir },
+  { chave: 'gerente', titulo: 'Gerente', fmt: exibir },
   { chave: 'local', titulo: 'Local', fmt: exibir },
   { chave: 'areaSupervisao', titulo: 'Supervisor', fmt: exibir },
   { chave: 'turno', titulo: 'Turno', fmt: exibir },
@@ -112,7 +114,7 @@ export const GeracaoCartaoPonto = () => {
   useEffect(() => { 
     setCarregando(true);
     carregar(); 
-    const id = setInterval(carregar, 120000); // 2 minutos
+    const id = setInterval(carregar, 60000); // 1 minuto
     return () => clearInterval(id);
   }, [carregar]);
 
@@ -140,7 +142,7 @@ export const GeracaoCartaoPonto = () => {
     }
     const termo = busca.trim().toLowerCase();
     if (termo) {
-      const campos = ['nome', 're', 'cliente', 'local', 'areaSupervisao', 'empresa', 'turno'];
+      const campos = ['nome', 're', 'cliente', 'gerente', 'local', 'areaSupervisao', 'empresa', 'turno'];
       l = l.filter((x) => campos.some((c) => String(x[c] ?? '').toLowerCase().includes(termo)));
     }
     return l;
@@ -334,24 +336,14 @@ export const GeracaoCartaoPonto = () => {
         </>
       ) : abaId === 'gerente' ? (
         <>
-          <Card style={{ borderColor: 'var(--blue-50)', backgroundColor: 'var(--blue-50)' }}>
-            <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
-              <Info size={18} style={{ color: 'var(--blue)', flexShrink: 0, marginTop: '2px' }} />
-              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--gray-700)' }}>
-                Agrupado por <strong>Área de Supervisão</strong>. O de-para Área → Gerente (tabela
-                <em> Supervisão</em> do BI) ainda não está integrado — assim que a fonte for disponibilizada, troco o agrupamento para Gerente.
-              </p>
-            </div>
-          </Card>
-
           <div className="grid-2-cols" style={{ alignItems: 'start' }}>
             <Card>
-              <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Pendências por Supervisão</h3>
+              <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Pendências por Gerente</h3>
               <BarChart
-                data={resumoPor(linhas, (l) => l.areaSupervisao, { ordenarPor: 'pendencias' })
+                data={resumoPor(linhas, (l) => l.gerente, { ordenarPor: 'pendencias' })
                   .filter((g) => g.pendencias > 0)
                   .map((g) => ({ label: g.label, value: g.pendencias }))}
-                cor="var(--danger)"
+                cor={(d) => corDeRotulo(d.label)}
               />
             </Card>
             <Card>
@@ -361,8 +353,21 @@ export const GeracaoCartaoPonto = () => {
           </div>
 
           <Card>
-            <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Pendências por Supervisão — detalhe</h3>
-            <TabelaResumo colunas={colsResumo('Supervisão')} linhas={resumoPor(linhas, (l) => l.areaSupervisao)} total={tot(linhas)} altura={520} />
+            <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Pendências por Gerente — detalhe</h3>
+            <TabelaResumo
+              colunas={colsResumo('Gerente').map((c, i) => (i !== 0 ? c : {
+                ...c,
+                formato: (v) => (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', maxWidth: '100%' }}>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: corDeRotulo(v), flexShrink: 0 }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</span>
+                  </span>
+                ),
+              }))}
+              linhas={resumoPor(linhas, (l) => l.gerente)}
+              total={tot(linhas)}
+              altura={520}
+            />
           </Card>
         </>
       ) : (
