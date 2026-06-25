@@ -1,6 +1,6 @@
 # 💼 Portal CSC - Dashboard Operacional
 
-Plataforma web premium para visualização e acompanhamento de relatórios operacionais. O backend lê os dados **ao vivo** do **SQL Server** corporativo e apresenta visualizações de alta performance em mapas e grids interativos. Em produção, a plataforma roda online (VPS) e alcança o banco interno por uma **rede privada Tailscale** — o SQL Server **nunca é exposto à internet**. Opcionalmente, um motor de sincronização pode exportar snapshots para o **Supabase** (nuvem).
+Plataforma web premium para visualização e acompanhamento de relatórios operacionais. O backend lê os dados **ao vivo** do **SQL Server** corporativo e apresenta visualizações de alta performance em mapas e grids interativos. Em produção, a plataforma roda online (VPS, em containers) e alcança o banco interno por uma **rede privada Tailscale** — o SQL Server **nunca é exposto à internet**.
 
 > 🔌 **Acesso externo / deploy:** a topologia que liga a plataforma online ao banco interno (serviço provedor de dados + Tailscale + Traefik) está documentada em **[infra/README.md](infra/README.md)** e **[TUNEL-VPS.md](TUNEL-VPS.md)**.
 
@@ -27,7 +27,9 @@ PORT=3001
 CACHE_TTL_SECONDS=30   # 30s = dados "ao vivo"; aumente para aliviar o banco
 DATA_SOURCE=sqlserver  # 'sqlserver' = lê o banco ao vivo | 'supabase' = lê snapshot da nuvem
 
-# Conexão Supabase (Nuvem)
+# Conexão Supabase (Nuvem) — OPCIONAL / LEGADO
+# Só é necessário se usar o motor de sync (DATA_SOURCE=supabase). O deploy atual
+# usa DATA_SOURCE=sqlserver (ao vivo) e NÃO precisa do Supabase.
 SUPABASE_DB_HOST=aws-1-sa-east-1.pooler.supabase.com
 SUPABASE_DB_PORT=6543
 SUPABASE_DB_USER=postgres.SEU_PROJECT_REF
@@ -64,7 +66,10 @@ npm run dev
 
 ---
 
-### Opção B: Sincronização de Dados (Motor)
+### Opção B: Sincronização de Dados (Motor) — opcional/legado
+
+> ℹ️ **Não usado no deploy atual** (que lê o banco ao vivo via Tailscale). Mantido
+> apenas como alternativa de nuvem para o relatório de Rotas de Supervisão.
 
 Para rodar o motor que extrai os dados do SQL Server (intranet) e injeta no Supabase (internet):
 
@@ -107,7 +112,7 @@ node src/sync/gerar-e-enviar.js
 | Backend | Node.js + Express + `mssql` |
 | Frontend | React + Vite + Leaflet + Lucide Icons |
 | CSS | Vanilla CSS (Variáveis, Glassmorphism, Micro-animações) |
-| Nuvem / DB | Supabase (PostgreSQL) + SQL Server |
+| Banco de dados | SQL Server (ao vivo) — Supabase (PostgreSQL) opcional/legado |
 | Geolocalização| OpenStreetMap (Fallback) + Integração STC |
 
 ### Acesso externo em produção (containers na VPS + Tailscale)

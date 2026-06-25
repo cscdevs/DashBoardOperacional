@@ -152,17 +152,22 @@ export const RotasSupervisao = () => {
 
   useEffect(() => {
     let ativo = true;
+    const carregar = () => {
+      fetchRotasSupervisao()
+        .then((data) => {
+          if (!ativo) return;
+          setRotas(data.rotas || []);
+          setErro(null);
+        })
+        .catch((e) => ativo && setErro(e.message))
+        .finally(() => ativo && setCarregando(false));
+    };
     setCarregando(true);
-    fetchRotasSupervisao()
-      .then((data) => {
-        if (!ativo) return;
-        setRotas(data.rotas || []);
-        setErro(null);
-      })
-      .catch((e) => ativo && setErro(e.message))
-      .finally(() => ativo && setCarregando(false));
+    carregar();
+    const id = setInterval(carregar, 120000); // 2 minutos
     return () => {
       ativo = false;
+      clearInterval(id);
     };
   }, []);
 

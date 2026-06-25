@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { ehLocalEspecial } from '../../utils/locais';
@@ -198,16 +198,19 @@ export const FluxoAtestadosFaltas = () => {
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [linhaSelecionada, setLinhaSelecionada] = useState(null);
 
-  const carregar = () => {
-    setCarregando(true);
+  const carregar = useCallback(() => {
     fetchFluxoAtestadosFaltas({ dataInicial, dataFinal })
       .then((d) => { setDados(d); setErro(null); })
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
-  };
+  }, [dataInicial, dataFinal]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { carregar(); }, []);
+  useEffect(() => { 
+    setCarregando(true);
+    carregar(); 
+    const id = setInterval(carregar, 120000); // Auto-refresh a cada 2 min
+    return () => clearInterval(id);
+  }, [carregar]);
 
   const aba = ABAS.find((a) => a.id === abaId);
 

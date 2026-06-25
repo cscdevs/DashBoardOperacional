@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { fetchGeracaoCartaoPonto } from './api';
@@ -97,8 +97,7 @@ export const GeracaoCartaoPonto = () => {
   const [filtrosExtra, setFiltrosExtra] = useState({});
   const [busca, setBusca] = useState('');
 
-  const carregar = () => {
-    setCarregando(true);
+  const carregar = useCallback(() => {
     fetchGeracaoCartaoPonto()
       .then((d) => {
         setRegistros(d.registros || []);
@@ -106,10 +105,14 @@ export const GeracaoCartaoPonto = () => {
       })
       .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
-  };
+  }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { carregar(); }, []);
+  useEffect(() => { 
+    setCarregando(true);
+    carregar(); 
+    const id = setInterval(carregar, 120000); // 2 minutos
+    return () => clearInterval(id);
+  }, [carregar]);
 
   const listaCompetencias = useMemo(() => (registros ? competencias(registros) : []), [registros]);
 
