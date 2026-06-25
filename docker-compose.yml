@@ -21,6 +21,7 @@ services:
           memory: 512M
       labels:
         - traefik.enable=true
+        - traefik.docker.network=pportz  ## LINHA ADICIONADA: Diz ao Traefik para usar esta rede
         - traefik.http.routers.dashboard_csc.rule=Host(`dashboard.csc.pportz.com.br`) ## Url do Dashboard
         - traefik.http.routers.dashboard_csc.entrypoints=websecure
         - traefik.http.routers.dashboard_csc.priority=10
