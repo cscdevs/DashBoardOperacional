@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import compression from 'compression';
+import zlib from 'node:zlib';
 import 'dotenv/config';
 import { buscarRotas } from './reports/rotas-supervisao/rotas-supervisao.js';
 import { buscarRotasDaNuvem } from './reports/rotas-supervisao/rotas-supervisao-nuvem.js';
@@ -18,7 +19,13 @@ const DATA_SOURCE = (process.env.DATA_SOURCE || 'sqlserver').toLowerCase();
 const lerRotas = DATA_SOURCE === 'supabase' ? buscarRotasDaNuvem : buscarRotas;
 console.log(`[api] Fonte de dados: ${DATA_SOURCE}`);
 
-app.use(compression()); // gzip: respostas grandes (ex.: 31 MB) caem para ~3 MB
+// Compressão das respostas (ex.: 31 MB -> ~2 MB). Usamos brotli em qualidade
+// BAIXA (5) em vez do padrão 11 — o padrão é pesadíssimo de CPU/memória em
+// payloads grandes e ajudava a estourar o heap do container.
+app.use(compression({
+  level: 6, // gzip
+  params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 }, // brotli mais leve
+}));
 app.use(cors());
 app.use(express.json());
 

@@ -126,12 +126,17 @@ export async function forcarAtualizacao() {
   return infoCache();
 }
 
-/** Pré-carrega relatórios no boot. Ignora falhas (cai pro disco/lazy depois). */
-export function aquecer(tarefas) {
+/**
+ * Pré-carrega relatórios no boot, UM DE CADA VEZ (sequencial) para não somar o
+ * pico de memória de vários datasets grandes ao mesmo tempo. Ignora falhas.
+ */
+export async function aquecer(tarefas) {
   for (const { chave, produtor } of tarefas) {
-    comCache(chave, produtor).catch((e) =>
-      console.warn(`[cache] aquecimento de '${chave}' falhou: ${e.message}`)
-    );
+    try {
+      await comCache(chave, produtor);
+    } catch (e) {
+      console.warn(`[cache] aquecimento de '${chave}' falhou: ${e.message}`);
+    }
   }
 }
 

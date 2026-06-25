@@ -62,6 +62,9 @@ services:
       - STC_USER=${STC_USER}
       - STC_PASS=${STC_PASS}
       - CACHE_DIR=/app/.cache    # snapshots do cache resiliente (volume abaixo)
+      # Relatórios grandes (53k linhas) usam bastante heap; libera o Node a usar
+      # mais memória (deve ser MENOR que o limit de memória abaixo).
+      - NODE_OPTIONS=--max-old-space-size=1536
     volumes:
       - dashboard_cache:/app/.cache   # mantém o último dado bom entre redeploys
     networks:
@@ -72,6 +75,9 @@ services:
       placement:
         constraints:
           - node.role == manager   # mesmo nó onde o Tailscale está instalado
+      resources:
+        limits:
+          memory: 2G   # evita o OOM ao carregar/serializar os relatórios grandes
 
 networks:
   pportz:                     # rede EXTERNA do Traefik (ajuste o nome se preciso)
