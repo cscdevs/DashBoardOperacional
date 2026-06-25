@@ -34,23 +34,22 @@ services:
   dashboard_backend:
     image: dashboard-backend:latest ## Imagem do Backend (Build na VPS)
     environment:
-      # Lembre-se de configurar as senhas diretamente no menu "Environment Variables" do Portainer
       - DB_SERVER=192.168.0.58
       - DB_PORT=1433
       - DB_DATABASE=SAR2G_WORKS_PRD
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_USER=sar2g
+      - DB_PASSWORD=works@#sar2g
       - DB_ENCRYPT=false
       - DB_TRUST_SERVER_CERTIFICATE=true
       - PORT=3001
       - CACHE_TTL_SECONDS=30
       - DATA_SOURCE=sqlserver
       - STC_BASE_URL=https://ap3.stc.srv.br/integration/prod
-      - STC_KEY=${STC_KEY}
-      - STC_USER=${STC_USER}
-      - STC_PASS=${STC_PASS}
+      - STC_KEY=7e0a6b6b42558761470d6269804fa428
+      - STC_USER=webservice
+      - STC_PASS=webservice
     networks:
-      - dashboard_net  ## Rede interna exclusiva para frontend <-> backend
+      - dashboard_net  ## Rede interna exclusiva para comunicação do frontend
     deploy:
       mode: replicated
       replicas: 1
@@ -69,5 +68,5 @@ networks:
     external: true
     name: pportz
     
-  dashboard_net: ## Rede interna isolada
+  dashboard_net: ## Rede isolada que permite o Nginx do Frontend falar com o Backend
     driver: overlay
