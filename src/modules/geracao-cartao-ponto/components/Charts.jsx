@@ -1,19 +1,18 @@
 import React from 'react';
 
-/** Paleta de cores dos gráficos (reutilizada por donut, barras e colunas). */
+/** Paleta dos gráficos. Status fixo: Entregue (verde) / Pendências (vermelho). */
 export const PALETA = [
-  '#1B0DAE', '#0EA5E9', '#22C55E', '#F59E0B', '#EF4444',
-  '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#64748B',
+  '#22C55E', '#EF4444', '#0EA5E9', '#F59E0B', '#8B5CF6',
+  '#EC4899', '#14B8A6', '#F97316', '#1B0DAE', '#64748B',
 ];
 
 const corPorIndice = (i) => PALETA[i % PALETA.length];
 const fmt = (n) => Number(n ?? 0).toLocaleString('pt-BR');
-const SemDados = () => <p style={{ color: 'var(--gray-400)', fontSize: '0.85rem', margin: 0 }}>Sem dados no período.</p>;
+const pct = (f) => `${Math.round((f ?? 0) * 100)}%`;
+const SemDados = () => <p style={{ color: 'var(--gray-400)', fontSize: '0.85rem', margin: 0 }}>Sem dados para os filtros atuais.</p>;
 
-/**
- * Barras horizontais. `data` = [{ label, value }]. Bom para rankings.
- */
-export function BarChart({ data = [], cor = 'var(--blue)', maxBarras = 10 }) {
+/** Barras horizontais. `data` = [{ label, value }]. Bom para rankings. */
+export function BarChart({ data = [], cor = 'var(--blue)', maxBarras = 12 }) {
   const linhas = data.slice(0, maxBarras);
   const max = Math.max(...linhas.map((d) => d.value), 1);
   if (linhas.length === 0) return <SemDados />;
@@ -21,13 +20,13 @@ export function BarChart({ data = [], cor = 'var(--blue)', maxBarras = 10 }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
       {linhas.map((d) => (
         <div key={d.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span title={d.label} style={{ width: '38%', flexShrink: 0, fontSize: '0.8rem', color: 'var(--gray-700)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>
+          <span title={d.label} style={{ width: '40%', flexShrink: 0, fontSize: '0.8rem', color: 'var(--gray-700)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>
             {d.label}
           </span>
           <div style={{ flex: 1, background: 'var(--gray-100)', borderRadius: '4px', height: '18px' }}>
             <div style={{ width: `${(d.value / max) * 100}%`, height: '100%', background: cor, borderRadius: '4px', minWidth: '2px', transition: 'width 0.3s ease' }} />
           </div>
-          <span className="mono" style={{ width: '48px', flexShrink: 0, fontSize: '0.8rem', color: 'var(--gray-900)', fontWeight: 600, textAlign: 'right' }}>
+          <span className="mono" style={{ width: '52px', flexShrink: 0, fontSize: '0.8rem', color: 'var(--gray-900)', fontWeight: 600, textAlign: 'right' }}>
             {fmt(d.value)}
           </span>
         </div>
@@ -36,9 +35,7 @@ export function BarChart({ data = [], cor = 'var(--blue)', maxBarras = 10 }) {
   );
 }
 
-/**
- * Rosca (donut) com legenda. `data` = [{ label, value }]. Bom para distribuições.
- */
+/** Rosca (donut) com legenda. `data` = [{ label, value }]. */
 export function DonutChart({ data = [], tamanho = 188, espessura = 24 }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) return <SemDados />;
@@ -81,10 +78,7 @@ export function DonutChart({ data = [], tamanho = 188, espessura = 24 }) {
   );
 }
 
-/**
- * Colunas verticais (estilo Power BI). `data` = [{ label, value }].
- * `cor` pode ser uma string ou um array (uma cor por coluna).
- */
+/** Colunas verticais (estilo Power BI). `data` = [{ label, value }]. */
 export function ColumnChart({ data = [], cor = 'var(--blue)', altura = 220 }) {
   const max = Math.max(...data.map((d) => d.value), 1);
   if (data.length === 0) return <SemDados />;
@@ -107,68 +101,40 @@ export function ColumnChart({ data = [], cor = 'var(--blue)', altura = 220 }) {
   );
 }
 
-/** Gera um path com segmentos RETOS (linha quebrada) a partir de pontos {x,y}. */
-function pathReto(pts) {
-  if (!pts.length) return '';
-  return 'M ' + pts.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' L ');
-}
-
 /**
- * Área com linha SUAVE para séries temporais. `data` = [{ label, value }]
- * em ordem cronológica. Ocupa 100% da largura (sem barra de rolagem).
+ * Medidor semicircular (gauge) de percentual, no estilo do BI.
+ * `valor` é uma fração 0..1 (ex.: 0.87 → 87%).
  */
-export function AreaChart({ data = [], cor = 'var(--blue)', altura = 240 }) {
-  if (data.length === 0) return <SemDados />;
-  const n = data.length;
-  const W = 760, H = altura;
-  const padX = 42, padTop = 28, padBottom = 30;
-  const max = Math.max(...data.map((d) => d.value), 1);
-  const x = (i) => padX + (i * (W - 2 * padX)) / Math.max(n - 1, 1);
-  const y = (v) => H - padBottom - (v / max) * (H - padTop - padBottom);
-  const pts = data.map((d, i) => ({ x: x(i), y: y(d.value) }));
-  const linha = pathReto(pts);
-  const area = `${linha} L ${x(n - 1).toFixed(1)} ${H - padBottom} L ${x(0).toFixed(1)} ${H - padBottom} Z`;
-  const ticks = [0, 0.5, 1].map((f) => Math.round(max * f));
-  const passoRotulo = Math.max(1, Math.ceil(n / 12)); // evita rótulos sobrepostos
-  const mostrarValores = n <= 62; // mostra a quantidade nos pontos (até ~2 meses)
-  const gradId = 'fa-area-grad';
+export function Gauge({ valor = 0, cor = 'var(--success)', tamanho = 220, espessura = 22 }) {
+  const f = Math.max(0, Math.min(1, valor || 0));
+  const W = tamanho, H = tamanho / 2 + espessura;
+  const cx = W / 2, cy = tamanho / 2 + espessura / 2;
+  const r = (tamanho - espessura) / 2;
+  // Semicírculo da esquerda (180°) até a direita (0°).
+  const ponto = (frac) => {
+    const ang = Math.PI * (1 - frac); // 1 → 180°(esq), 0 → 0°(dir)
+    return { x: cx + r * Math.cos(ang), y: cy - r * Math.sin(ang) };
+  };
+  const arco = (de, ate) => {
+    const a = ponto(de), b = ponto(ate);
+    const grande = ate - de > 0.5 ? 1 : 0;
+    return `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} A ${r} ${r} 0 ${grande} 1 ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
+  };
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', height: 'auto', overflow: 'visible' }}>
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={cor} stopOpacity="0.32" />
-          <stop offset="100%" stopColor={cor} stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
-      {ticks.map((t, i) => {
-        const gy = y(t);
-        return (
-          <g key={i}>
-            <line x1={padX} y1={gy} x2={W - padX / 2} y2={gy} stroke="var(--gray-200)" strokeWidth="1" strokeDasharray="3 4" />
-            <text x={padX - 8} y={gy + 4} textAnchor="end" style={{ fontSize: '13px', fill: 'var(--gray-400)' }}>{fmt(t)}</text>
-          </g>
-        );
-      })}
-      <path d={area} fill={`url(#${gradId})`} />
-      <path d={linha} fill="none" stroke={cor} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
-      {data.map((d, i) => (
-        <g key={i}>
-          <circle cx={x(i)} cy={y(d.value)} r="4.5" fill="var(--white)" stroke={cor} strokeWidth="2.5" />
-          {mostrarValores && (
-            <text x={x(i)} y={y(d.value) - 11} textAnchor="middle" className="mono" style={{ fontSize: '11px', fontWeight: 700, fill: 'var(--gray-900)' }}>{fmt(d.value)}</text>
-          )}
-          {i % passoRotulo === 0 && (
-            <text x={x(i)} y={H - 9} textAnchor="middle" style={{ fontSize: '13px', fill: 'var(--gray-500)' }}>{d.label}</text>
-          )}
-        </g>
-      ))}
-    </svg>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
+        <path d={arco(0, 1)} fill="none" stroke="var(--gray-100)" strokeWidth={espessura} strokeLinecap="round" />
+        {f > 0 && <path d={arco(0, f)} fill="none" stroke={cor} strokeWidth={espessura} strokeLinecap="round" style={{ transition: 'all 0.5s ease' }} />}
+        <text x={cx} y={cy - 6} textAnchor="middle" className="mono" style={{ fontSize: '2rem', fontWeight: 800, fill: 'var(--gray-900)' }}>{pct(f)}</text>
+        <text x={cx} y={cy + 14} textAnchor="middle" style={{ fontSize: '0.7rem', fill: 'var(--gray-400)', letterSpacing: '0.1em' }}>ENTREGUE</text>
+      </svg>
+    </div>
   );
 }
 
 /**
  * Tabela-resumo rolável com cabeçalho fixo e linha de Total (estilo matriz do BI).
- * `colunas` = [{ chave, titulo, alinhar, mono, formato }]; `total` = objeto opcional.
+ * `colunas` = [{ chave, titulo, alinhar, mono, formato, largura }]; `total` opcional.
  */
 export function TabelaResumo({ colunas = [], linhas = [], total, altura = 460 }) {
   if (!linhas || linhas.length === 0) return <SemDados />;
@@ -192,7 +158,7 @@ export function TabelaResumo({ colunas = [], linhas = [], total, altura = 460 })
             <tr key={i} style={{ borderBottom: '1px solid var(--gray-100)' }}>
               {colunas.map((c) => (
                 <td key={c.chave} className={c.mono ? 'mono' : undefined} title={String(l[c.chave] ?? '')} style={{ padding: '0.4rem 0.6rem', textAlign: c.alinhar || 'left', color: 'var(--gray-700)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {c.formato ? c.formato(l[c.chave]) : l[c.chave]}
+                  {c.formato ? c.formato(l[c.chave], l) : l[c.chave]}
                 </td>
               ))}
             </tr>
@@ -203,36 +169,13 @@ export function TabelaResumo({ colunas = [], linhas = [], total, altura = 460 })
             <tr>
               {colunas.map((c, idx) => (
                 <td key={c.chave} className={c.mono ? 'mono' : undefined} style={{ position: 'sticky', bottom: 0, background: 'var(--gray-100)', borderTop: '2px solid var(--gray-200)', padding: '0.5rem 0.6rem', textAlign: c.alinhar || 'left', fontWeight: 700, color: 'var(--gray-900)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {idx === 0 ? 'Total' : c.formato ? c.formato(total[c.chave]) : total[c.chave]}
+                  {idx === 0 ? 'Total' : c.formato ? c.formato(total[c.chave], total) : total[c.chave]}
                 </td>
               ))}
             </tr>
           </tfoot>
         )}
       </table>
-    </div>
-  );
-}
-
-/**
- * Lista limpa e rolável: nome à esquerda, valor à direita, separador leve.
- * Sem barras. `data` = [{ label, value }] ordenado desc.
- */
-export function RankList({ data = [], maxItens = 200, altura = 320 }) {
-  if (data.length === 0) return <SemDados />;
-  const itens = data.slice(0, maxItens);
-  return (
-    <div className="sem-scrollbar" style={{ maxHeight: `${altura}px`, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-      {itens.map((d) => (
-        <div key={d.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', padding: '0.4rem 0.25rem', borderBottom: '1px solid var(--gray-100)' }}>
-          <span title={d.label} style={{ flex: 1, fontSize: '0.83rem', color: 'var(--gray-700)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {d.label}
-          </span>
-          <span className="mono" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--gray-900)', flexShrink: 0 }}>
-            {fmt(d.value)}
-          </span>
-        </div>
-      ))}
     </div>
   );
 }

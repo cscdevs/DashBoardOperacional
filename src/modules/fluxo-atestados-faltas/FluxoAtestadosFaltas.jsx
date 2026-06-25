@@ -372,11 +372,11 @@ export const FluxoAtestadosFaltas = () => {
           {/* Tabelas */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
             <Card>
-              <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Cliente</h3>
+              <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Ranking por Cliente</h3>
               <TabelaResumo colunas={COLS_CLIENTE} linhas={resumoCliente.linhas} total={resumoCliente.total} />
             </Card>
             <Card>
-              <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Funcionário</h3>
+              <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Ranking por Funcionário</h3>
               <TabelaResumo colunas={COLS_FUNC} linhas={resumoFuncionario.linhas} total={resumoFuncionario.total} />
             </Card>
           </div>

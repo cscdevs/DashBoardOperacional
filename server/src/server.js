@@ -5,6 +5,7 @@ import { buscarRotas } from './reports/rotas-supervisao/rotas-supervisao.js';
 import { buscarRotasDaNuvem } from './reports/rotas-supervisao/rotas-supervisao-nuvem.js';
 import { buscarPosicoesVeiculos, buscarTrajetoVeiculo } from './reports/rotas-supervisao/stc.js';
 import { buscarFluxoAtestadosFaltas } from './reports/fluxo-atestados-faltas/fluxo-atestados-faltas.js';
+import { buscarGeracaoCartaoPonto } from './reports/geracao-cartao-ponto/geracao-cartao-ponto.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -112,6 +113,24 @@ app.get('/api/fluxo-atestados-faltas', async (req, res) => {
     console.error('[api] Erro ao buscar Fluxo de Atestados/Faltas:', err.message);
     res.status(500).json({
       erro: 'Falha ao consultar o relatório de Fluxo de Atestados / Faltas.',
+      detalhe: err.message,
+    });
+  }
+});
+
+// ---- Relatório: Geração de Cartão de Ponto (Folha de Ponto) ----
+// Retorna todos os cartões; a tela filtra por competência/empresa/etc.
+app.get('/api/geracao-cartao-ponto', async (req, res) => {
+  try {
+    const dados = await comCache('geracao-cartao-ponto', buscarGeracaoCartaoPonto);
+    res.json({
+      total: dados.length,
+      registros: dados,
+    });
+  } catch (err) {
+    console.error('[api] Erro ao buscar Geração de Cartão de Ponto:', err.message);
+    res.status(500).json({
+      erro: 'Falha ao consultar o relatório de Geração de Cartão de Ponto.',
       detalhe: err.message,
     });
   }

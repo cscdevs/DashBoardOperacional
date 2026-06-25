@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
-import { Route as RouteIcon, FileText, ArrowRight } from 'lucide-react';
+import { Route as RouteIcon, FileText, CalendarClock, ArrowRight } from 'lucide-react';
 
 /** Catálogo de relatórios disponíveis na plataforma. */
 const RELATORIOS = [
@@ -19,6 +19,14 @@ const RELATORIOS = [
       'Atestados, faltas por cliente e faltas disciplinares por período, com KPIs, gráficos, flag de demitidos e exportação.',
     icone: FileText,
     rota: '/relatorios/fluxo-atestados-faltas',
+    disponivel: true,
+  },
+  {
+    titulo: 'Geração de Cartão de Ponto',
+    descricao:
+      'Geração e retorno dos cartões de ponto por competência — entregues × pendências, com visão geral, detalhamento e por supervisão.',
+    icone: CalendarClock,
+    rota: '/relatorios/geracao-cartao-ponto',
     disponivel: true,
   },
 ];

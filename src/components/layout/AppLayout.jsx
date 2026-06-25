@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Settings, Route as RouteIcon, FileText, Bell, Moon, Sun, Menu, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Settings, Route as RouteIcon, FileText, CalendarClock, Bell, Moon, Sun, Menu, LogOut, X } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/csc-logo.svg';
@@ -79,6 +79,12 @@ export const AppLayout = () => {
               <NavLink to="/relatorios/fluxo-atestados-faltas" onClick={closeSidebar} style={navLinkStyle}>
                 <FileText size={20} />
                 Fluxo de Atestados / Faltas
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/relatorios/geracao-cartao-ponto" onClick={closeSidebar} style={navLinkStyle}>
+                <CalendarClock size={20} />
+                Geração de Cartão de Ponto
               </NavLink>
             </li>
           </ul>

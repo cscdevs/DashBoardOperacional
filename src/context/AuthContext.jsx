@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
     // Simulated API call
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        if (email === 'admin@pportz.com.br' && password === 'admin') {
+        if (email === 'csc.devapoio@gmail.com' && password === 'SPTK.0509.EVE') {
           const userData = { email, role: 'admin', name: 'Administrador' };
           setUser(userData);
           localStorage.setItem('dashboard_user', JSON.stringify(userData));

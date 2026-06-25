@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true,
     proxy: {
       // Encaminha as chamadas /api para o backend Express (porta 3001)
       '/api': {
