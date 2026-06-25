@@ -4,10 +4,10 @@ services:
 ## --------------------------- DASHBOARD CSC --------------------------- ##
 
   dashboard_frontend:
-    image: dashboard-csc-local:latest ## Versão do Frontend (Build Local)
-
+    image: dashboard-frontend:latest ## Imagem do Frontend (Build na VPS)
     networks:
-      - pportz ## Nome da rede interna
+      - pportz         ## Nome da rede externa do Traefik
+      - dashboard_net  ## Rede interna para falar com o backend
 
     deploy:
       mode: replicated
@@ -28,16 +28,46 @@ services:
         - traefik.http.routers.dashboard_csc.service=dashboard_frontend
         - traefik.http.services.dashboard_frontend.loadbalancer.server.port=80
         - traefik.http.services.dashboard_frontend.loadbalancer.passHostHeader=1
-        ## ---- Autenticação (basic-auth do Traefik) ----
-        ## Protege TODA a plataforma (inclui /api) com login/senha.
-        ## Gere o hash e substitua abaixo (veja TUNEL-VPS.md). Em arquivo de
-        ## stack do Swarm, os '$' do hash htpasswd DEVEM ser dobrados ($$).
-        - traefik.http.routers.dashboard_csc.middlewares=dashboard_auth
-        - traefik.http.middlewares.dashboard_auth.basicauth.users=admin:$$apr1$$TROQUE$$esteHashPeloSeuGeradoComHtpasswd
 
-## --------------------------- DASHBOARD CSC --------------------------- ##
+## --------------------------- BACKEND CSC ----------------------------- ##
+
+  dashboard_backend:
+    image: dashboard-backend:latest ## Imagem do Backend (Build na VPS)
+    environment:
+      # Lembre-se de configurar as senhas diretamente no menu "Environment Variables" do Portainer
+      - DB_SERVER=192.168.0.58
+      - DB_PORT=1433
+      - DB_DATABASE=SAR2G_WORKS_PRD
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_ENCRYPT=false
+      - DB_TRUST_SERVER_CERTIFICATE=true
+      - PORT=3001
+      - CACHE_TTL_SECONDS=30
+      - DATA_SOURCE=sqlserver
+      - STC_BASE_URL=https://ap3.stc.srv.br/integration/prod
+      - STC_KEY=${STC_KEY}
+      - STC_USER=${STC_USER}
+      - STC_PASS=${STC_PASS}
+    networks:
+      - dashboard_net  ## Rede interna exclusiva para frontend <-> backend
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+
+## --------------------------- REDES ----------------------------------- ##
 
 networks:
-  pportz: ## Nome da rede interna
+  pportz: ## Nome da rede do Traefik
     external: true
     name: pportz
+    
+  dashboard_net: ## Rede interna isolada
+    driver: overlay
