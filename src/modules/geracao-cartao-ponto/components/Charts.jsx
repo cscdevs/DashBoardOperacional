@@ -72,7 +72,7 @@ export function DonutChart({ data = [], tamanho = 188, espessura = 24 }) {
   const gap = 0; // anel contínuo, sem respiro entre as fatias
   let acumulado = 0;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
       <svg width={tamanho} height={tamanho} viewBox={`0 0 ${tamanho} ${tamanho}`} style={{ flexShrink: 0, filter: 'drop-shadow(0 4px 10px rgba(16,24,40,0.10))' }}>
         <circle cx={tamanho / 2} cy={tamanho / 2} r={r} fill="none" stroke="var(--gray-100)" strokeWidth={espessura} />
         <g transform={`rotate(-90 ${tamanho / 2} ${tamanho / 2})`}>

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
@@ -119,6 +119,23 @@ export const GeracaoCartaoPonto = () => {
   }, [carregar]);
 
   const listaCompetencias = useMemo(() => (registros ? competencias(registros) : []), [registros]);
+
+  /* Competência atual no formato ANOMES 'YYYYMM' (ex.: 202606). */
+  const anoMesAtual = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
+
+  /* Pré-seleciona a competência atual assim que os dados chegam (só 1x, para não
+     sobrescrever uma troca manual). Se o mês atual ainda não tem dados, cai para
+     a competência mais recente disponível. */
+  const competenciaIniciada = useRef(false);
+  useEffect(() => {
+    if (competenciaIniciada.current || listaCompetencias.length === 0) return;
+    competenciaIniciada.current = true;
+    const temAtual = listaCompetencias.some((c) => c.anoMes === anoMesAtual);
+    setCompetencia(temAtual ? anoMesAtual : listaCompetencias[0].anoMes);
+  }, [listaCompetencias, anoMesAtual]);
 
   /* Base SEM o filtro de competência (para tendência e opções dos selects). */
   const baseSemCompetencia = useMemo(() => {
@@ -304,15 +321,19 @@ export const GeracaoCartaoPonto = () => {
             <KpiCard titulo="% Entregue" valor={fmtPct(m.pctEntregue)} icone={Percent} cor="var(--blue)" fundo="var(--blue-50)" />
           </div>
 
-          {/* Donut + Gauge */}
-          <div className="grid-2-cols" style={{ alignItems: 'start' }}>
-            <Card>
+          {/* Donut + Gauge — cards de altura igual, conteúdo centralizado */}
+          <div className="grid-2-cols" style={{ alignItems: 'stretch' }}>
+            <Card style={{ display: 'flex', flexDirection: 'column' }}>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Qtd × Status</h3>
-              <DonutChart data={distribuicaoStatus(linhas)} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <DonutChart data={distribuicaoStatus(linhas)} />
+              </div>
             </Card>
-            <Card>
+            <Card style={{ display: 'flex', flexDirection: 'column' }}>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>% Entregue</h3>
-              <Gauge valor={m.pctEntregue} />
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Gauge valor={m.pctEntregue} />
+              </div>
             </Card>
           </div>
 
@@ -336,19 +357,23 @@ export const GeracaoCartaoPonto = () => {
         </>
       ) : abaId === 'gerente' ? (
         <>
-          <div className="grid-2-cols" style={{ alignItems: 'start' }}>
-            <Card>
+          <div className="grid-2-cols" style={{ alignItems: 'stretch' }}>
+            <Card style={{ display: 'flex', flexDirection: 'column' }}>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Pendências por Gerente</h3>
-              <BarChart
-                data={resumoPor(linhas, (l) => l.gerente, { ordenarPor: 'pendencias' })
-                  .filter((g) => g.pendencias > 0)
-                  .map((g) => ({ label: g.label, value: g.pendencias }))}
-                cor={(d) => corDeRotulo(d.label)}
-              />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <BarChart
+                  data={resumoPor(linhas, (l) => l.gerente, { ordenarPor: 'pendencias' })
+                    .filter((g) => g.pendencias > 0)
+                    .map((g) => ({ label: g.label, value: g.pendencias }))}
+                  cor={(d) => corDeRotulo(d.label)}
+                />
+              </div>
             </Card>
-            <Card>
+            <Card style={{ display: 'flex', flexDirection: 'column' }}>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Pendências por Competência</h3>
-              <ColumnChart data={tendencia} cor="var(--danger)" />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <ColumnChart data={tendencia} cor="var(--danger)" />
+              </div>
             </Card>
           </div>
 
