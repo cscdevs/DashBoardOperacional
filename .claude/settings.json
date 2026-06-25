@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -vE '^\\\\s*#|^\\\\s*$' .env)",
+      "Bash(grep -nE '\\\\.env' .gitignore server/.gitignore)",
+      "Bash(git check-ignore *)",
+      "Bash(node src/server.js)",
+      "Bash(echo \"server PID: $!\")",
+      "Bash(tailscale status *)",
+      "Bash(tailscale ip *)",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const j=JSON.parse\\(s\\);console.log\\('Self DNSName:', j.Self?.DNSName\\); console.log\\('MagicDNS suffix:', j.MagicDNSSuffix\\); console.log\\('CurrentTailnet:', j.CurrentTailnet?.MagicDNSEnabled, j.CurrentTailnet?.Name\\);}\\)\")",
+      "Bash(netstat -ano)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://100.85.93.84:3001/api/health)",
+      "Bash(winget search *)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3001/api/health)",
+      "Bash(curl -s \"http://localhost:3001/api/geracao-cartao-ponto\")",
+      "Bash(powershell -NoProfile -Command \"Get-Service DashboardsAPI | Select-Object Status,StartType,Name | Format-List\")",
+      "Bash(npm run *)",
+      "Bash(powershell -NoProfile -Command \"\\(Get-Service DashboardsAPI\\).Status\")",
+      "Bash(curl -s -o /dev/null -w \"localhost: HTTP %{http_code}\\\\n\" http://localhost:3001/api/health)",
+      "Bash(curl -s -o /dev/null -w \"tailscale: HTTP %{http_code}\\\\n\" http://100.85.93.84:3001/api/health)",
+      "Bash([ -f \"$MD\" ])",
+      "Read(//c/Users/Desenvolvedor-works/.claude/projects/c--Users-Desenvolvedor-works-Desktop-DashBoards/memory/**)",
+      "Read(//c/Users/Desenvolvedor-works/.claude/projects/c--Users-Desenvolvedor-works-Desktop-DashBoards/**)",
+      "Bash(tailscale set *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const j=JSON.parse\\(s\\);console.log\\('AdvertiseRoutes:', JSON.stringify\\(j.Self?.PrimaryRoutes\\)||'\\(via prefs\\)'\\);}\\)\")",
+      "Bash(tailscale debug *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('scripts:', JSON.stringify\\(p.scripts||{}, null, 2\\)\\); console.log\\('type:', p.type\\)\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Desenvolvedor-works\\.claude\\projects\\c--Users-Desenvolvedor-works-Desktop-DashBoards\\memory"
+    ]
+  }
+}

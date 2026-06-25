@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Lock, Mail, MapPin } from 'lucide-react';
 import logo from '../assets/csc-logo.svg';
+import bgLogin from '../assets/bg-login.png';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -38,7 +39,9 @@ export const Login = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, var(--gray-50) 0%, var(--gray-200) 100%)',
+      background: `linear-gradient(rgba(16, 24, 40, 0.4), rgba(16, 24, 40, 0.8)), url(${bgLogin})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
       padding: '1rem',
       position: 'relative',
       overflow: 'hidden'
@@ -180,7 +183,7 @@ export const Login = () => {
         </form>
 
         <div style={{ marginTop: '2rem', textAlign: 'center', color: 'var(--gray-400)', fontSize: '0.75rem' }}>
-          <p>Uso exclusivo pportz tecnologia.</p>
+          <p>CSC - Todos os direitos reservados</p>
         </div>
       </div>
     </div>

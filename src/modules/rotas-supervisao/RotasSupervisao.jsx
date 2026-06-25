@@ -21,8 +21,8 @@ import {
   Car,
 } from 'lucide-react';
 
-const KpiCard = ({ titulo, valor, icone: Icone, cor = 'var(--blue)', fundo = 'var(--blue-50)' }) => (
-  <Card>
+const KpiCard = ({ titulo, valor, subtitulo, icone: Icone, cor = 'var(--blue)', fundo = 'var(--blue-50)' }) => (
+  <Card className="card-3d-tilt stagger-item" style={{ position: 'relative', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
       <div>
         <p style={{ color: 'var(--gray-500)', fontSize: '0.875rem', fontWeight: 500, margin: 0 }}>{titulo}</p>

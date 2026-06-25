@@ -1,0 +1,8 @@
+# Evita copiar segredos e lixo para dentro da imagem do backend.
+# (as variáveis vêm do ambiente do Portainer em runtime)
+.env
+.env.*
+!.env.example
+node_modules
+logs
+npm-debug.log*

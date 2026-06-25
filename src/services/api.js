@@ -24,3 +24,13 @@ export async function getJSON(path) {
 export function fetchHealth() {
   return getJSON('/api/health');
 }
+
+/**
+ * Invalida o cache em memória do backend (TTL ~30s). Use após uma alteração no
+ * banco para que a próxima leitura traga os dados frescos imediatamente.
+ */
+export async function limparCache() {
+  const resp = await fetch(`${BASE_URL}/api/cache/limpar`, { method: 'POST' });
+  if (!resp.ok) throw new Error(`Erro ${resp.status} ao limpar o cache`);
+  return resp.json();
+}

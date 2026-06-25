@@ -1,113 +1,187 @@
-# Plataforma de Relatórios
+# 💼 Portal CSC - Dashboard Operacional
 
-Plataforma web para visualização de relatórios operacionais, baseada no design system do
-DashboardOrganizacional (React + Vite + Leaflet). O backend conecta ao **SQL Server**, executa
-as queries dos relatórios e serve os dados para o front.
+Plataforma web premium para visualização e acompanhamento de relatórios operacionais. O backend lê os dados **ao vivo** do **SQL Server** corporativo e apresenta visualizações de alta performance em mapas e grids interativos. Em produção, a plataforma roda online (VPS) e alcança o banco interno por uma **rede privada Tailscale** — o SQL Server **nunca é exposto à internet**. Opcionalmente, um motor de sincronização pode exportar snapshots para o **Supabase** (nuvem).
 
-## Primeiro relatório: Rotas de Supervisão
+> 🔌 **Acesso externo / deploy:** a topologia que liga a plataforma online ao banco interno (serviço provedor de dados + Tailscale + Traefik) está documentada em **[infra/README.md](infra/README.md)** e **[TUNEL-VPS.md](TUNEL-VPS.md)**.
 
-Locais de serviço ativos por empresa, base operacional e supervisor. Inclui:
+---
 
-- **KPIs**: total de locais, clientes, supervisores e cidades.
-- **Mapa** (Leaflet/OpenStreetMap): pontos agrupados por **cidade/UF**. Como a query não
-  retorna latitude/longitude, as coordenadas vêm de uma tabela fixa
-  (`server/src/geo/coordenadas.js`); cidades não mapeadas usam o centro da UF (marcado como
-  *posição aproximada* no popup).
-- **Filtros**: busca livre + empresa, base operacional, UF e supervisor.
-- **Tabela** com exportação para **CSV** (compatível com Excel).
+## 🚀 Como Rodar
 
-## Estrutura
+### Pré-requisitos
 
-Cada relatório é um **módulo autocontido**. Só a *home* e o *login* ficam fora dos
-módulos; o que é compartilhado (UI, layout, contexto de auth, helper HTTP, infra do
-backend) também fica fora.
+O backend requer um arquivo `.env` na pasta `server/` (copie `.env.example`):
 
-```
-DashboardOrganizacional/
-├── src/                              # Frontend (React + Vite)
-│   ├── pages/                        # Telas fora dos módulos
-│   │   ├── Dashboard.jsx             #   home / catálogo de relatórios
-│   │   └── Login.jsx
-│   ├── modules/                      # Um módulo por relatório (autocontido)
-│   │   └── rotas-supervisao/
-│   │       ├── RotasSupervisao.jsx   #   página do relatório
-│   │       ├── api.js                #   chamadas de API do relatório
-│   │       ├── components/RotasMap.jsx
-│   │       └── utils/cores.js        #   cores por supervisor
-│   ├── components/ui/ + layout/      # Compartilhado (Button, Card, AppLayout)
-│   ├── context/AuthContext.jsx       # Compartilhado
-│   ├── services/api.js               # Helper HTTP compartilhado (getJSON, health)
-│   └── utils/texto.js                # Compartilhado (tituloCase)
-├── server/                           # Backend (Express + mssql)
-│   ├── src/server.js                 # API + cache em memória (registra cada relatório)
-│   ├── src/db.js                     # Pool de conexão SQL Server (compartilhado)
-│   ├── src/geo/                      # Coordenadas/geocode por cidade/UF (compartilhado)
-│   ├── src/sync/                     # Motor SQL Server -> Supabase (compartilhado)
-│   └── src/reports/                  # Um módulo por relatório
-│       └── rotas-supervisao/
-│           ├── rotas-supervisao.sql        # a query
-│           ├── rotas-supervisao.js         # normalização (fonte SQL Server)
-│           ├── rotas-supervisao-nuvem.js   # leitura do snapshot Supabase
-│           └── supervisores.js             # de-para rótulo da rota -> supervisor
-└── vite.config.js                    # Proxy /api -> http://localhost:3001
+```env
+# Conexão com SQL Server (Desenvolvimento / Motor)
+DB_SERVER=ip_do_banco
+DB_PORT=1433
+DB_DATABASE=nome_do_banco
+DB_USER=usuario
+DB_PASSWORD=senha
+DB_ENCRYPT=false
+DB_TRUST_SERVER_CERTIFICATE=true
+
+# Configuração do Backend
+PORT=3001
+CACHE_TTL_SECONDS=30   # 30s = dados "ao vivo"; aumente para aliviar o banco
+DATA_SOURCE=sqlserver  # 'sqlserver' = lê o banco ao vivo | 'supabase' = lê snapshot da nuvem
+
+# Conexão Supabase (Nuvem)
+SUPABASE_DB_HOST=aws-1-sa-east-1.pooler.supabase.com
+SUPABASE_DB_PORT=6543
+SUPABASE_DB_USER=postgres.SEU_PROJECT_REF
+SUPABASE_DB_PASSWORD=sua_senha_do_banco
+SUPABASE_DB_NAME=postgres
+
+# API STC (Rastreamento Veicular)
+STC_BASE_URL=https://ap3.stc.srv.br/integration/prod
+STC_KEY=sua_integration_key
+STC_USER=usuario_da_api
+STC_PASS=senha_da_api
 ```
 
-## Como rodar (desenvolvimento)
+---
 
-Pré-requisito: **Node.js 20+**.
+### Opção A: Ambiente de Desenvolvimento Completo
 
-### 1. Backend
+**1. Subir o Backend (Node.js)**
+```bash
+cd server
+npm install
+npm run dev
+# O backend subirá em http://localhost:3001
+```
+
+**2. Subir o Frontend (Vite)**
+Em um novo terminal na raiz do projeto:
+```bash
+npm install
+npm run dev
+# O frontend subirá em http://localhost:5173
+```
+*Nota: O Vite está configurado para fazer proxy automático de `/api/*` para a porta 3001.*
+
+---
+
+### Opção B: Sincronização de Dados (Motor)
+
+Para rodar o motor que extrai os dados do SQL Server (intranet) e injeta no Supabase (internet):
 
 ```bash
 cd server
-cp .env.example .env      # edite com as credenciais do SQL Server
-npm install
-npm run dev               # sobe em http://localhost:3001
+node src/sync/gerar-e-enviar.js
+```
+*Deve ser agendado no Windows Task Scheduler para rodar 1x ao dia.*
+
+---
+
+## 📊 Funcionalidades
+
+### Rotas de Supervisão
+- **Mapa Interativo (Leaflet)**: Plotagem exata de todos os locais de serviço ativos com agrupamento de clusters.
+- **Rastreamento STC**: Integração para exibir a posição ao vivo dos veículos e supervisores no mapa.
+- **Validação Geográfica**: Coordenadas do banco são checadas em relação ao centro da cidade. Casos > 60km recebem flag visual de "coordenada suspeita".
+- **Filtros e Exportação**: Filtragem por empresa, base operacional, UF, supervisor e cliente. Exportação total para CSV.
+
+### Fluxo de Atestados / Faltas
+- **Dashboard Analítico**: Acompanhamento de atestados, faltas por cliente e faltas disciplinares.
+- **Regras Embutidas**: Identificação automática de funcionários demitidos e segmentação de faltas por período customizado.
+
+### Geração de Cartão de Ponto
+- Visão completa do faturamento e controle de cartões de ponto entregues vs. pendências.
+- Detalhamento progressivo por supervisão.
+
+### Design System "Premium"
+- **Glassmorphism**: Efeitos de vidro fosco em menus e barras laterais.
+- **Animações em Cascata**: Entrada fluída de cartões (Staggered Animations).
+- **Temas**: Suporte nativo e persistente para Claro / Escuro (Dark Mode automático no mapa e nas sombras volumétricas).
+
+---
+
+## 🧠 Arquitetura
+
+### Stack
+| Camada | Tecnologia |
+|--------|-----------|
+| Backend | Node.js + Express + `mssql` |
+| Frontend | React + Vite + Leaflet + Lucide Icons |
+| CSS | Vanilla CSS (Variáveis, Glassmorphism, Micro-animações) |
+| Nuvem / DB | Supabase (PostgreSQL) + SQL Server |
+| Geolocalização| OpenStreetMap (Fallback) + Integração STC |
+
+### Acesso externo em produção (containers na VPS + Tailscale)
+
+Topologia adotada para a plataforma online ler o banco **ao vivo** sem expô-lo:
+
+```
+Navegador ─HTTPS─▶ Traefik ─▶ frontend (nginx) ─/api─▶ backend (Node) ─▶ [Tailscale] ─▶ SQL Server ao vivo
+   domínio          basic-auth   container VPS          container VPS      subnet router    (nunca exposto)
 ```
 
-Configure o `.env`:
+- **Frontend e backend rodam em containers na VPS** (Docker + Portainer), ver [docker-compose-prd.yml](docker-compose-prd.yml).
+- O backend alcança o SQL Server interno (`192.168.0.58`) por uma **rede privada Tailscale**: a máquina interna anuncia a rota (`--advertise-routes`) e a VPS a aceita (`--accept-routes`). O banco **nunca** vai pra internet.
+- **Segredos** ficam no Portainer (env da stack), nunca no YAML. Dados "ao vivo": cache de 30s + botão **↻ Atualizar** no header.
+- Detalhes e passo-a-passo: **[infra/README.md](infra/README.md)** e **[TUNEL-VPS.md](TUNEL-VPS.md)**.
+
+### Padrão de Sincronização (Motor) — alternativa para nuvem
+Topologia opcional, hoje usada pelo relatório de Rotas de Supervisão:
+- O banco interno (SQL Server) **nunca** é exposto à internet.
+- Um script (Motor) rodando na infraestrutura interna consulta, limpa os dados, cruza supervisores, e executa um envio em transação (TRUNCATE + INSERT) para o Supabase.
+- A API no VPS consome os dados read-only do Supabase (`DATA_SOURCE=supabase`). Ver [DEPLOY.md](DEPLOY.md).
+
+### Limpeza de Dados
+- Exclusão de contratos encerrados (redução de 4.753 para 3.623 linhas operacionais).
+- Extração inteligente do nome do supervisor a partir de strings sujas da base legada (Ex: `(F) SME - ZONA SUL - CLEITON` → `Cleiton`).
+
+---
+
+## 📁 Estrutura
 
 ```
-DB_SERVER=...
-DB_PORT=1433
-DB_DATABASE=...
-DB_USER=...
-DB_PASSWORD=...
-DB_ENCRYPT=false
-DB_TRUST_SERVER_CERTIFICATE=true
-PORT=3001
-CACHE_TTL_SECONDS=300
+├── src/                               # Frontend (React + Vite)
+│   ├── components/layout/             # Sidebar, Header, Background dinâmico
+│   ├── modules/                       # Relatórios isolados por módulo
+│   │   ├── fluxo-atestados-faltas/
+│   │   ├── geracao-cartao-ponto/
+│   │   └── rotas-supervisao/
+│   ├── pages/                         # Dashboard principal e Login
+│   ├── services/                      # Axios e Helpers de API
+│   └── index.css                      # Design System (Tokens, Animations)
+├── server/                            # Backend (Express)
+│   ├── src/db.js                      # Pool MSSQL
+│   ├── src/geo/                       # Lógica de fallback de Coordenadas
+│   ├── src/reports/                   # Queries e formatação dos relatórios
+│   ├── src/sync/                      # Motor SQL Server -> Supabase
+│   └── server.js                      # Rotas da API e Cache em Memória
+├── infra/                             # Provisionamento da máquina interna (provedor de dados)
+│   ├── setup-service.ps1              #   recria o serviço Windows DashboardsAPI (NSSM)
+│   ├── setup-firewall.ps1            #   restringe a porta 3001 à rede Tailscale
+│   └── README.md                      #   referência completa da infra de acesso externo
+├── TUNEL-VPS.md                       # Guia de deploy do VPS (Tailscale + Traefik + basic-auth)
+├── DEPLOY.md                          # Topologia alternativa (Motor -> Supabase) e agendamento
+├── DESIGN_SYSTEM.md                   # Documentação visual da marca
+├── README.md                          # Este documento
+├── nginx.conf / Dockerfile / docker-compose.yml  # Build e deploy do frontend (VPS)
+└── vite.config.js                     # Configurações de Proxy do React
 ```
 
-### 2. Frontend
+### Endpoints Principais
 
-```bash
-npm install
-npm run dev               # sobe em http://localhost:5173
-```
+| Rota | Descrição |
+|------|-----------|
+| `GET /api/rotas-supervisao` | Traz o payload das rotas (`?mapa=false` desativa clusters) |
+| `GET /api/fluxo-atestados...` | Dados de atestados com filtro de data (`?dataInicial=...`) |
+| `POST /api/cache/limpar` | Força a renovação do cache em memória do backend |
+| `GET /api/health` | Healthcheck (verifica conexão ao banco baseando-se no `DATA_SOURCE`) |
 
-O Vite encaminha `/api/*` para o backend automaticamente (ver `vite.config.js`).
+---
 
-Login de teste (mock, herdado do projeto base): `admin@pportz.com.br` / `admin`.
+## 🔮 Melhorias Futuras
 
-## Endpoints da API
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/health` | Healthcheck |
-| GET | `/api/rotas-supervisao` | Relatório completo (`rotas` + `mapa`). `?mapa=false` omite o agrupamento. |
-| GET | `/api/fluxo-atestados-faltas` | Atestados + faltas por cliente + faltas disciplinares. Período via `?dataInicial=AAAA-MM-DD&dataFinal=AAAA-MM-DD` (padrão: ano corrente). Cada linha traz `ehDemitido`. |
-| POST | `/api/cache/limpar` | Invalida o cache em memória |
-
-## Adicionando novos relatórios
-
-Cada relatório é um módulo. Para criar `<nome>`:
-
-1. **Backend**: crie a pasta `server/src/reports/<nome>/` com `<nome>.sql` + `<nome>.js`
-   (espelhe `rotas-supervisao`) e exponha um endpoint em `server/src/server.js`.
-2. **Frontend**: crie a pasta `src/modules/<nome>/` com a página `<Nome>.jsx`, um `api.js`
-   (usando o helper `getJSON` de `src/services/api.js`) e, se precisar, `components/` e
-   `utils/` próprios do módulo.
-3. Registre a rota em `src/App.jsx`, o item no menu em
-   `src/components/layout/AppLayout.jsx` e o card no catálogo da home
-   (`src/pages/Dashboard.jsx`).
+- [x] Acesso externo ao banco interno **ao vivo** via Tailscale (subnet router), sem expor o SQL Server.
+- [x] Deploy da plataforma em **containers** (Docker + Portainer) — ver `docker-compose-prd.yml`.
+- [ ] Wirar **Traefik + basic-auth + HTTPS** na stack de container (hoje publica porta 80 direto).
+- [ ] Autenticação real no app (OAuth2/JWT) substituindo o login mock.
+- [ ] Criação do agendamento diário automático do motor via *Windows Task Scheduler*.
+- [ ] Rotatividade de credenciais de banco presentes no `.env`.

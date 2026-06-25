@@ -48,7 +48,7 @@ export function DonutChart({ data = [], tamanho = 188, espessura = 24 }) {
   let acumulado = 0;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-      <svg width={tamanho} height={tamanho} viewBox={`0 0 ${tamanho} ${tamanho}`} style={{ flexShrink: 0, filter: 'drop-shadow(0 4px 10px rgba(16,24,40,0.10))' }}>
+      <svg width={tamanho} height={tamanho} viewBox={`0 0 ${tamanho} ${tamanho}`} className="neon-shadow" style={{ flexShrink: 0 }}>
         <circle cx={tamanho / 2} cy={tamanho / 2} r={r} fill="none" stroke="var(--gray-100)" strokeWidth={espessura} />
         <g transform={`rotate(-90 ${tamanho / 2} ${tamanho / 2})`}>
           {data.map((d, i) => {
@@ -150,7 +150,7 @@ export function AreaChart({ data = [], cor = 'var(--blue)', altura = 240 }) {
         );
       })}
       <path d={area} fill={`url(#${gradId})`} />
-      <path d={linha} fill="none" stroke={cor} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={linha} fill="none" stroke={cor} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" className="neon-shadow" />
       {data.map((d, i) => (
         <g key={i}>
           <circle cx={x(i)} cy={y(d.value)} r="4.5" fill="var(--white)" stroke={cor} strokeWidth="2.5" />
@@ -179,9 +179,9 @@ export function TabelaResumo({ colunas = [], linhas = [], total, altura = 460 })
           {colunas.map((c) => <col key={c.chave} style={c.largura ? { width: c.largura } : undefined} />)}
         </colgroup>
         <thead>
-          <tr>
+          <tr className="glass-table-header">
             {colunas.map((c) => (
-              <th key={c.chave} style={{ position: 'sticky', top: 0, background: 'var(--white)', textAlign: c.alinhar || 'left', padding: '0.45rem 0.6rem', borderBottom: '2px solid var(--gray-200)', color: 'var(--gray-500)', fontWeight: 600, lineHeight: 1.2 }}>
+              <th key={c.chave} style={{ position: 'sticky', top: 0, textAlign: c.alinhar || 'left', padding: '0.6rem 0.6rem', borderBottom: '2px solid var(--gray-200)', color: 'var(--gray-700)', fontWeight: 600, lineHeight: 1.2 }}>
                 {c.titulo}
               </th>
             ))}

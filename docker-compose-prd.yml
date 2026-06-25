@@ -1,0 +1,78 @@
+# =====================================================================
+#  Stack de PRODUÇÃO para Portainer (Swarm) — Dashboard CSC
+#  Frontend + Backend em container, atrás do Traefik (HTTPS + basic-auth).
+#  O backend lê o SQL Server interno (192.168.0.58) pela rede Tailscale.
+#
+#  PRÉ-REQUISITOS:
+#   - Imagens já buildadas no nó (ver TUNEL-VPS.md, passo de build):
+#       dashboard-frontend:latest  e  dashboard-backend:latest
+#   - Tailscale no host com --accept-routes e a rota 192.168.0.58/32 aprovada.
+#   - Rede externa do Traefik (ajuste o nome se não for "pportz").
+#
+#  SEGREDOS: defina no Portainer (Stack -> Environment variables), NÃO aqui:
+#       DB_USER, DB_PASSWORD, STC_KEY, STC_USER, STC_PASS
+#
+#  Portainer STANDALONE (não-Swarm)? Troque, em cada serviço:
+#     - o bloco "deploy:" por "labels:" (mesmas labels) + "restart: always"
+#     - a rede "dashboard_net" de driver "overlay" para "bridge"
+# =====================================================================
+version: "3.8"
+
+services:
+  dashboard_frontend:
+    image: dashboard-frontend:latest
+    networks:
+      - pportz
+      - dashboard_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.dashboard_csc.rule=Host(`dashboard.csc.pportz.com.br`)
+        - traefik.http.routers.dashboard_csc.entrypoints=websecure
+        - traefik.http.routers.dashboard_csc.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.dashboard_csc.service=dashboard_frontend
+        - traefik.http.services.dashboard_frontend.loadbalancer.server.port=80
+        - traefik.http.services.dashboard_frontend.loadbalancer.passHostHeader=1
+        ## ---- Login (basic-auth) ----
+        ## Gere o hash:  docker run --rm httpd:alpine htpasswd -nbB admin 'SENHA'
+        ## e cole abaixo DOBRANDO os '$' -> '$$'
+        - traefik.http.routers.dashboard_csc.middlewares=dashboard_auth
+        - traefik.http.middlewares.dashboard_auth.basicauth.users=admin:$$apr1$$TROQUE$$esteHashPeloSeuGerado
+
+  dashboard_backend:
+    image: dashboard-backend:latest
+    environment:
+      - DB_SERVER=192.168.0.58          # alcançado via Tailscale subnet router
+      - DB_PORT=1433
+      - DB_DATABASE=SAR2G_WORKS_PRD
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_ENCRYPT=false
+      - DB_TRUST_SERVER_CERTIFICATE=true
+      - PORT=3001
+      - CACHE_TTL_SECONDS=30
+      - DATA_SOURCE=sqlserver
+      - STC_BASE_URL=https://ap3.stc.srv.br/integration/prod
+      - STC_KEY=${STC_KEY}
+      - STC_USER=${STC_USER}
+      - STC_PASS=${STC_PASS}
+    networks:
+      - dashboard_net
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager   # mesmo nó onde o Tailscale está instalado
+
+networks:
+  pportz:                     # rede EXTERNA do Traefik (ajuste o nome se preciso)
+    external: true
+    name: pportz
+  dashboard_net:              # rede interna frontend <-> backend
+    driver: overlay

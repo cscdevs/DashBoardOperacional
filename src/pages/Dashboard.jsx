@@ -42,10 +42,10 @@ export const Dashboard = () => {
       </div>
 
       <div className="kanban-grid">
-        {RELATORIOS.map((r) => {
+        {RELATORIOS.map((r, index) => {
           const Icone = r.icone;
           const conteudo = (
-            <Card style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', cursor: r.disponivel ? 'pointer' : 'default', opacity: r.disponivel ? 1 : 0.6 }}>
+            <Card className="stagger-item" style={{ '--delay': `${index * 0.15}s`, height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', cursor: r.disponivel ? 'pointer' : 'default', opacity: r.disponivel ? 1 : 0.6 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ padding: '0.6rem', backgroundColor: 'var(--blue-50)', borderRadius: '8px', color: 'var(--blue)' }}>
                   <Icone size={24} />
@@ -60,9 +60,9 @@ export const Dashboard = () => {
             </Card>
           );
           return r.disponivel ? (
-            <Link key={r.titulo} to={r.rota} style={{ textDecoration: 'none' }}>{conteudo}</Link>
+            <Link key={r.titulo} to={r.rota} style={{ textDecoration: 'none', height: '100%', display: 'block' }}>{conteudo}</Link>
           ) : (
-            <div key={r.titulo}>{conteudo}</div>
+            <div key={r.titulo} style={{ height: '100%' }}>{conteudo}</div>
           );
         })}
       </div>

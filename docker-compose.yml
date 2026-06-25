@@ -28,6 +28,12 @@ services:
         - traefik.http.routers.dashboard_csc.service=dashboard_frontend
         - traefik.http.services.dashboard_frontend.loadbalancer.server.port=80
         - traefik.http.services.dashboard_frontend.loadbalancer.passHostHeader=1
+        ## ---- Autenticação (basic-auth do Traefik) ----
+        ## Protege TODA a plataforma (inclui /api) com login/senha.
+        ## Gere o hash e substitua abaixo (veja TUNEL-VPS.md). Em arquivo de
+        ## stack do Swarm, os '$' do hash htpasswd DEVEM ser dobrados ($$).
+        - traefik.http.routers.dashboard_csc.middlewares=dashboard_auth
+        - traefik.http.middlewares.dashboard_auth.basicauth.users=admin:$$apr1$$TROQUE$$esteHashPeloSeuGeradoComHtpasswd
 
 ## --------------------------- DASHBOARD CSC --------------------------- ##
 

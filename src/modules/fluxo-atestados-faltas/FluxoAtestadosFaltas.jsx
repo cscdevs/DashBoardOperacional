@@ -12,8 +12,9 @@ import {
 import {
   FileText, Building2, AlertTriangle, Users, UserX,
   Download, Search, Loader2, Calendar,
-  Clock, Hourglass, TrendingUp, CheckCircle2,
+  Clock, Hourglass, TrendingUp, CheckCircle2, Filter, Printer,
 } from 'lucide-react';
+import { Drawer } from '../../components/ui/Drawer';
 
 /* ------------------------------------------------------------------ */
 /* Configuração de cada aba: dataset, busca, colunas e agregações.     */
@@ -126,8 +127,13 @@ const ABAS = [
 /* ------------------------------------------------------------------ */
 
 const KpiCard = ({ titulo, sub, valor, icone: Icone, cor = 'var(--blue)', fundo = 'var(--blue-50)' }) => (
-  <Card>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+  <Card className="card-3d-tilt stagger-item" style={{ position: 'relative', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+    {/* Decorative Sparkline */}
+    <svg style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '50%', opacity: 0.15, pointerEvents: 'none' }} preserveAspectRatio="none" viewBox="0 0 100 40">
+      <path d="M0,40 Q10,20 20,25 T40,15 T60,20 T80,5 T100,10 L100,40 Z" fill={cor} />
+      <path d="M0,40 Q10,20 20,25 T40,15 T60,20 T80,5 T100,10" fill="none" stroke={cor} strokeWidth="2" />
+    </svg>
+    <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
       <div style={{ minWidth: 0 }}>
         <p style={{ color: 'var(--gray-500)', fontSize: '0.8rem', fontWeight: 500, margin: 0 }}>{titulo}</p>
         {sub && <p style={{ color: 'var(--gray-400)', fontSize: '0.7rem', margin: '0.1rem 0 0' }}>{sub}</p>}
@@ -138,6 +144,19 @@ const KpiCard = ({ titulo, sub, valor, icone: Icone, cor = 'var(--blue)', fundo 
       </div>
     </div>
   </Card>
+);
+
+const SkeletonDashboard = () => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', padding: '1rem 0' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem' }}>
+      {[1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton-box" style={{ height: '110px' }} />)}
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem' }}>
+      <div className="skeleton-box" style={{ height: '320px' }} />
+      <div className="skeleton-box" style={{ height: '320px' }} />
+    </div>
+    <div className="skeleton-box" style={{ height: '400px' }} />
+  </div>
 );
 
 const inputStyle = {
@@ -176,6 +195,8 @@ export const FluxoAtestadosFaltas = () => {
   const [demitidosFiltro, setDemitidosFiltro] = useState('todos'); // todos | ativos | demitidos
   const [filtrosExtra, setFiltrosExtra] = useState({}); // { campo: valor } por aba (Tipo Falta, Empresa, Cliente)
   const [busca, setBusca] = useState('');
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const [linhaSelecionada, setLinhaSelecionada] = useState(null);
 
   const carregar = () => {
     setCarregando(true);
@@ -250,11 +271,16 @@ export const FluxoAtestadosFaltas = () => {
             Atestados, faltas por cliente e faltas disciplinares — com filtro de período e flag de demitidos.
           </p>
         </div>
-        {!aba.semTabela && (
-          <Button variant="primary" onClick={exportar} disabled={!dados || linhasFiltradas.length === 0}>
-            <Download size={16} /> Exportar CSV
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <Button variant="secondary" onClick={() => window.print()}>
+            <Printer size={16} /> Gerar PDF
           </Button>
-        )}
+          {!aba.semTabela && (
+            <Button variant="primary" onClick={exportar} disabled={!dados || linhasFiltradas.length === 0}>
+              <Download size={16} /> Exportar CSV
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Filtros: período + demitidos + busca */}
@@ -275,42 +301,51 @@ export const FluxoAtestadosFaltas = () => {
             </div>
           </div>
           <Button variant="primary" onClick={carregar} disabled={carregando}>
-            {carregando ? <Loader2 size={16} className="spin" /> : 'Aplicar período'}
+            {carregando ? <Loader2 size={16} className="spin" /> : 'Aplicar'}
           </Button>
 
-          {(aba.filtrosExtra || []).map((f) => (
-            <div key={f.campo}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--gray-500)', marginBottom: '0.25rem' }}>{f.rotulo}</label>
-              <select
-                value={filtrosExtra[f.campo] || ''}
-                onChange={(e) => setFiltrosExtra((s) => ({ ...s, [f.campo]: e.target.value }))}
-                style={inputStyle}
-              >
-                <option value="">Todos</option>
-                {valoresUnicos(linhasParaOpcoes, f.campo).map((v) => (
-                  <option key={v} value={v}>{f.campo === 'statusFalta' ? v : exibir(v)}</option>
-                ))}
-              </select>
-            </div>
-          ))}
+          <Button variant="secondary" onClick={() => setFiltrosAbertos(!filtrosAbertos)}>
+            <Filter size={16} /> Filtros Avançados
+          </Button>
 
           <div style={{ flex: 1 }} />
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--gray-500)', marginBottom: '0.25rem' }}>Demitidos</label>
-            <select value={demitidosFiltro} onChange={(e) => setDemitidosFiltro(e.target.value)} style={inputStyle}>
-              <option value="todos">Todos</option>
-              <option value="ativos">Apenas ativos</option>
-              <option value="demitidos">Apenas demitidos</option>
-            </select>
-          </div>
           <div style={{ position: 'relative', minWidth: '220px' }}>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--gray-500)', marginBottom: '0.25rem' }}>Buscar</label>
+            <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--gray-500)', marginBottom: '0.25rem' }}>Buscar na tabela</label>
             <Search size={15} style={{ position: 'absolute', left: '0.6rem', top: '2.05rem', color: 'var(--gray-400)' }} />
             <input
               type="text" placeholder="Funcionário, cliente, local..." value={busca}
               onChange={(e) => setBusca(e.target.value)} style={{ ...inputStyle, width: '100%', paddingLeft: '2rem' }}
             />
+          </div>
+        </div>
+
+        {/* Filtros Colapsáveis */}
+        <div className="collapsible-content" style={{ maxHeight: filtrosAbertos ? '200px' : '0', opacity: filtrosAbertos ? 1 : 0, marginTop: filtrosAbertos ? '1rem' : '0' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', padding: '1rem', background: 'var(--gray-50)', borderRadius: '8px', border: '1px solid var(--gray-200)' }}>
+            {(aba.filtrosExtra || []).map((f) => (
+              <div key={f.campo}>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--gray-500)', marginBottom: '0.25rem' }}>{f.rotulo}</label>
+                <select
+                  value={filtrosExtra[f.campo] || ''}
+                  onChange={(e) => setFiltrosExtra((s) => ({ ...s, [f.campo]: e.target.value }))}
+                  style={inputStyle}
+                >
+                  <option value="">Todos</option>
+                  {valoresUnicos(linhasParaOpcoes, f.campo).map((v) => (
+                    <option key={v} value={v}>{f.campo === 'statusFalta' ? v : exibir(v)}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--gray-500)', marginBottom: '0.25rem' }}>Status do Funcionário</label>
+              <select value={demitidosFiltro} onChange={(e) => setDemitidosFiltro(e.target.value)} style={inputStyle}>
+                <option value="todos">Todos</option>
+                <option value="ativos">Apenas ativos</option>
+                <option value="demitidos">Apenas demitidos</option>
+              </select>
+            </div>
           </div>
         </div>
       </Card>
@@ -352,10 +387,7 @@ export const FluxoAtestadosFaltas = () => {
           </div>
         </Card>
       ) : carregando && !dados ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '4rem' }}>
-          <Loader2 size={40} className="spin" style={{ color: 'var(--blue)' }} />
-          <p style={{ color: 'var(--gray-500)' }}>Carregando dados do período...</p>
-        </div>
+        <SkeletonDashboard />
       ) : aba.layout === 'tabelas' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Gráficos */}
@@ -411,20 +443,26 @@ export const FluxoAtestadosFaltas = () => {
             <div style={{ overflowX: 'auto', maxHeight: '520px', overflowY: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
-                  <tr>
+                  <tr className="glass-table-header">
                     {aba.colunas.map((c) => (
-                      <th key={c.titulo} style={{ position: 'sticky', top: 0, background: 'var(--white)', textAlign: 'left', padding: '0.5rem 0.6rem', borderBottom: '2px solid var(--gray-200)', color: 'var(--gray-500)', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                      <th key={c.titulo} style={{ position: 'sticky', top: 0, textAlign: 'left', padding: '0.6rem 0.6rem', borderBottom: '2px solid var(--gray-200)', color: 'var(--gray-700)', whiteSpace: 'nowrap', fontWeight: 600, zIndex: 10 }}>
                         {c.titulo}
                       </th>
                     ))}
-                    <th style={{ position: 'sticky', top: 0, background: 'var(--white)', textAlign: 'center', padding: '0.5rem 0.6rem', borderBottom: '2px solid var(--gray-200)', color: 'var(--gray-500)', whiteSpace: 'nowrap', fontWeight: 600 }}>
-                      Demitido?
+                    <th style={{ position: 'sticky', top: 0, textAlign: 'center', padding: '0.6rem 0.6rem', borderBottom: '2px solid var(--gray-200)', color: 'var(--gray-700)', whiteSpace: 'nowrap', fontWeight: 600, zIndex: 10 }}>
+                      Status
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {linhasFiltradas.slice(0, LIMITE_LINHAS).map((l, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                    <tr 
+                      key={i} 
+                      onClick={() => setLinhaSelecionada(l)}
+                      style={{ borderBottom: '1px solid var(--gray-100)', cursor: 'pointer', transition: 'background-color 0.2s' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-50)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
                       {aba.colunas.map((c) => (
                         <td key={c.titulo} style={{ padding: '0.45rem 0.6rem', color: 'var(--gray-700)', whiteSpace: 'nowrap', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={String((c.fmt ? c.fmt(l[c.chave]) : l[c.chave]) ?? '')}>
                           {c.fmt ? c.fmt(l[c.chave]) : (l[c.chave] ?? '')}
@@ -432,8 +470,8 @@ export const FluxoAtestadosFaltas = () => {
                       ))}
                       <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center' }}>
                         {l.ehDemitido
-                          ? <span style={{ color: 'var(--danger)', fontWeight: 600 }}>Sim</span>
-                          : <span style={{ color: 'var(--gray-400)' }}>Não</span>}
+                          ? <span className="status-badge danger"><span className="dot-indicator" /> Demitido</span>
+                          : <span className="status-badge success"><span className="dot-indicator" /> Ativo</span>}
                       </td>
                     </tr>
                   ))}
@@ -447,6 +485,46 @@ export const FluxoAtestadosFaltas = () => {
           )}
         </>
       )}
+
+      {/* Drawer de Detalhamento da Linha (Tabela) */}
+      <Drawer
+        isOpen={!!linhaSelecionada}
+        onClose={() => setLinhaSelecionada(null)}
+        title="Dossiê do Colaborador"
+      >
+        {linhaSelecionada && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ padding: '1.25rem', background: 'var(--blue-50)', borderRadius: '12px', border: '1px solid var(--blue-100)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h3 style={{ margin: 0, color: 'var(--blue-dark)', fontSize: '1.2rem' }}>{linhaSelecionada.nome || linhaSelecionada.cliente}</h3>
+                  <p style={{ margin: '0.25rem 0 0', color: 'var(--blue)', fontWeight: 600 }} className="mono">RE: {linhaSelecionada.re || '-'}</p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  {linhaSelecionada.ehDemitido
+                    ? <span className="status-badge danger"><span className="dot-indicator" /> Demitido</span>
+                    : <span className="status-badge success"><span className="dot-indicator" /> Ativo</span>}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <h4 style={{ margin: 0, color: 'var(--gray-900)', fontSize: '0.95rem', borderBottom: '2px solid var(--gray-100)', paddingBottom: '0.5rem' }}>Informações Registradas</h4>
+              {aba.colunas.map(c => {
+                const valor = c.fmt ? c.fmt(linhaSelecionada[c.chave]) : linhaSelecionada[c.chave];
+                return (
+                  <div key={c.chave} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'center' }}>
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--gray-500)', fontWeight: 500 }}>{c.titulo}</p>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--gray-900)', fontWeight: 600, wordBreak: 'break-word' }}>
+                      {valor || '-'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 };
