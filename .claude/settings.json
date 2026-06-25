@@ -31,7 +31,14 @@
       "Bash(powershell -NoProfile -Command \"Get-Service DashboardsAPI | Select-Object Status,StartType | Format-List\")",
       "Bash(curl -s -o /dev/null -w \"http %{http_code} em %{time_total}s\\\\n\" --max-time 60 http://localhost:3001/api/geracao-cartao-ponto)",
       "Bash(curl -s http://localhost:3001/api/status)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(node -e \"const p=require\\('./server/package.json'\\); console.log\\('deps:', Object.keys\\(p.dependencies||{}\\).join\\(', '\\)\\)\")",
+      "Bash(npm install *)",
+      "Bash(powershell -NoProfile -Command 'Get-CimInstance Win32_Process -Filter \"Name='\\\\''node.exe'\\\\''\" | Where-Object { $_.CommandLine -like '\\\\''*src/server.js*'\\\\'' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }')",
+      "Bash(rm -rf .cache)",
+      "Bash(curl -s -o /dev/null -w \"tamanho: %{size_download} bytes\\\\n\" http://localhost:3001/api/geracao-cartao-ponto)",
+      "Bash(curl -s --compressed -o /dev/null -w \"tamanho: %{size_download} bytes | encoding: %header{content-encoding}\\\\n\" http://localhost:3001/api/geracao-cartao-ponto)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('compression:', p.dependencies.compression || 'AUSENTE'\\); const fs=require\\('fs'\\); console.log\\('package-lock tem compression:', fs.readFileSync\\('package-lock.json','utf8'\\).includes\\('node_modules/compression'\\)\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\Desenvolvedor-works\\.claude\\projects\\c--Users-Desenvolvedor-works-Desktop-DashBoards\\memory"

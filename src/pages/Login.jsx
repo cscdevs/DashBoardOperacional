@@ -78,8 +78,8 @@ export const Login = () => {
         maxWidth: '420px',
         position: 'relative',
         zIndex: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        backdropFilter: 'blur(10px)',
+        backgroundColor: 'var(--glass-bg)',
+        backdropFilter: 'blur(16px)',
         padding: '2.5rem 2rem',
         boxShadow: 'var(--shadow-lg)'
       }}>
@@ -126,7 +126,7 @@ export const Login = () => {
                   fontFamily: 'Montserrat, sans-serif',
                   outline: 'none',
                   transition: 'border-color 0.2s ease',
-                  backgroundColor: 'var(--white)',
+                  backgroundColor: 'var(--gray-50)',
                   color: 'var(--gray-900)'
                 }}
                 onFocus={(e) => e.target.style.borderColor = 'var(--blue)'}
@@ -156,7 +156,7 @@ export const Login = () => {
                   fontFamily: 'Montserrat, sans-serif',
                   outline: 'none',
                   transition: 'border-color 0.2s ease',
-                  backgroundColor: 'var(--white)',
+                  backgroundColor: 'var(--gray-50)',
                   color: 'var(--gray-900)'
                 }}
                 onFocus={(e) => e.target.style.borderColor = 'var(--blue)'}
