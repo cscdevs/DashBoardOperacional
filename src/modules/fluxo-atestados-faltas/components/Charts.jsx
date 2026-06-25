@@ -173,7 +173,7 @@ export function AreaChart({ data = [], cor = 'var(--blue)', altura = 240 }) {
 export function TabelaResumo({ colunas = [], linhas = [], total, altura = 460 }) {
   if (!linhas || linhas.length === 0) return <SemDados />;
   return (
-    <div className="sem-scrollbar" style={{ maxHeight: `${altura}px`, overflowY: 'auto' }}>
+    <div className="sem-scrollbar" style={{ maxHeight: `${altura}px`, overflowY: 'auto', overflowX: 'auto' }}>
       <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
         <colgroup>
           {colunas.map((c) => <col key={c.chave} style={c.largura ? { width: c.largura } : undefined} />)}

@@ -61,6 +61,9 @@ services:
       - STC_KEY=${STC_KEY}
       - STC_USER=${STC_USER}
       - STC_PASS=${STC_PASS}
+      - CACHE_DIR=/app/.cache    # snapshots do cache resiliente (volume abaixo)
+    volumes:
+      - dashboard_cache:/app/.cache   # mantém o último dado bom entre redeploys
     networks:
       - dashboard_net
     deploy:
@@ -76,3 +79,6 @@ networks:
     name: pportz
   dashboard_net:              # rede interna frontend <-> backend
     driver: overlay
+
+volumes:
+  dashboard_cache:            # snapshots persistentes do cache (resiliência)

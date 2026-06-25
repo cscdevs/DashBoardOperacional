@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Snapshots do cache resiliente (gerados em runtime)
+.cache
+
 # Variáveis de ambiente / segredos (nunca versionar)
 .env
 .env.*

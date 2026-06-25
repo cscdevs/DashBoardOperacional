@@ -204,7 +204,7 @@ export const AppLayout = () => {
             </button>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }} className="header-actions">
             {/* Search Button for Spotlight */}
             <button
               onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
@@ -213,8 +213,8 @@ export const AppLayout = () => {
               title="Busca Global (Ctrl + K)"
             >
               <Search size={16} />
-              <span style={{ fontSize: '0.8rem' }}>Busca...</span>
-              <kbd style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem', background: 'var(--white)', borderRadius: '4px', border: '1px solid var(--gray-200)' }}>Ctrl+K</kbd>
+              <span style={{ fontSize: '0.8rem' }} className="hide-on-mobile">Busca...</span>
+              <kbd style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem', background: 'var(--white)', borderRadius: '4px', border: '1px solid var(--gray-200)' }} className="hide-on-mobile">Ctrl+K</kbd>
             </button>
 
             <button

@@ -151,7 +151,7 @@ const SkeletonDashboard = () => (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem' }}>
       {[1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton-box" style={{ height: '110px' }} />)}
     </div>
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem' }}>
+    <div className="grid-2-cols">
       <div className="skeleton-box" style={{ height: '320px' }} />
       <div className="skeleton-box" style={{ height: '320px' }} />
     </div>
@@ -394,7 +394,7 @@ export const FluxoAtestadosFaltas = () => {
       ) : aba.layout === 'tabelas' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Gráficos */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+          <div className="grid-2-cols" style={{ alignItems: 'start' }}>
             <Card>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Por Tipo de Falta</h3>
               <DonutChart data={contarPor(linhasFiltradas, 'statusFalta', { topN: 8 })} />
@@ -405,7 +405,7 @@ export const FluxoAtestadosFaltas = () => {
             </Card>
           </div>
           {/* Tabelas */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+          <div className="grid-2-cols" style={{ alignItems: 'start' }}>
             <Card>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Ranking por Cliente</h3>
               <TabelaResumo colunas={COLS_CLIENTE} linhas={resumoCliente.linhas} total={resumoCliente.total} />
@@ -424,7 +424,7 @@ export const FluxoAtestadosFaltas = () => {
           </div>
 
           {/* Gráficos */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem' }}>
+          <div className="grid-2-cols">
             {graficos.map((g) => (
               <Card key={g.titulo} style={g.largura === 'full' ? { gridColumn: '1 / -1' } : undefined}>
                 <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>{g.titulo}</h3>

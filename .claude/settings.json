@@ -28,7 +28,10 @@
       "Bash(tailscale debug *)",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('scripts:', JSON.stringify\\(p.scripts||{}, null, 2\\)\\); console.log\\('type:', p.type\\)\")",
       "Bash(powershell -NoProfile -Command \"\\(Test-NetConnection -ComputerName 192.168.0.58 -Port 1433 -WarningAction SilentlyContinue\\).TcpTestSucceeded\")",
-      "Bash(powershell -NoProfile -Command \"Get-Service DashboardsAPI | Select-Object Status,StartType | Format-List\")"
+      "Bash(powershell -NoProfile -Command \"Get-Service DashboardsAPI | Select-Object Status,StartType | Format-List\")",
+      "Bash(curl -s -o /dev/null -w \"http %{http_code} em %{time_total}s\\\\n\" --max-time 60 http://localhost:3001/api/geracao-cartao-ponto)",
+      "Bash(curl -s http://localhost:3001/api/status)",
+      "Read(//tmp/**)"
     ],
     "additionalDirectories": [
       "c:\\Users\\Desenvolvedor-works\\.claude\\projects\\c--Users-Desenvolvedor-works-Desktop-DashBoards\\memory"

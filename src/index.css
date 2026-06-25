@@ -237,9 +237,15 @@ body {
 }
 
 @media (max-width: 768px) {
-  .grid-1-2, .grid-2-1 {
+  .grid-1-2, .grid-2-1, .grid-2-cols {
     grid-template-columns: 1fr;
   }
+}
+
+.grid-2-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
 }
 
 /* Utilitários Responsivos Modulares */
@@ -494,6 +500,7 @@ button {
     left: 0;
     bottom: 0;
     transform: translateX(-100%);
+    z-index: 1000;
   }
 
   .layout-sidebar.open {
@@ -503,6 +510,19 @@ button {
   /* No celular, o botão de abrir o menu ficará visível no header */
   .mobile-menu-btn {
     display: flex !important;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  .layout-header {
+    padding: 0 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .header-actions {
+    gap: 0.25rem !important;
   }
 }
 

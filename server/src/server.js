@@ -6,10 +6,10 @@ import { buscarRotasDaNuvem } from './reports/rotas-supervisao/rotas-supervisao-
 import { buscarPosicoesVeiculos, buscarTrajetoVeiculo } from './reports/rotas-supervisao/stc.js';
 import { buscarFluxoAtestadosFaltas } from './reports/fluxo-atestados-faltas/fluxo-atestados-faltas.js';
 import { buscarGeracaoCartaoPonto } from './reports/geracao-cartao-ponto/geracao-cartao-ponto.js';
+import { comCache, forcarAtualizacao, aquecer, infoCache } from './cache.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
-const CACHE_TTL = (Number(process.env.CACHE_TTL_SECONDS) || 300) * 1000;
 
 // Fonte dos dados: 'sqlserver' (lê direto do SQL Server interno, p/ dev e p/ o
 // motor) ou 'supabase' (lê o snapshot da nuvem — usado no VPS de produção).
@@ -20,19 +20,8 @@ console.log(`[api] Fonte de dados: ${DATA_SOURCE}`);
 app.use(cors());
 app.use(express.json());
 
-// ---- Cache simples em memória ----
-const cache = new Map(); // chave -> { data, expiraEm }
-
-async function comCache(chave, produtor) {
-  const agora = Date.now();
-  const item = cache.get(chave);
-  if (item && item.expiraEm > agora) {
-    return item.data;
-  }
-  const data = await produtor();
-  cache.set(chave, { data, expiraEm: agora + CACHE_TTL });
-  return data;
-}
+// Cache resiliente (stale-while-revalidate + stale-if-error + disco): ver cache.js.
+// `comCache`, `forcarAtualizacao`, `aquecer` e `infoCache` vêm de lá.
 
 // ---- Healthcheck ----
 app.get('/api/health', (req, res) => {
@@ -136,12 +125,28 @@ app.get('/api/geracao-cartao-ponto', async (req, res) => {
   }
 });
 
-// ---- Invalidar cache manualmente ----
-app.post('/api/cache/limpar', (req, res) => {
-  cache.clear();
-  res.json({ ok: true, mensagem: 'Cache limpo.' });
+// ---- Forçar atualização agora (botão "Atualizar") ----
+// Refaz a busca de tudo que está em cache; se o banco estiver fora, mantém o
+// último dado bom (não derruba a tela).
+app.post('/api/cache/limpar', async (req, res) => {
+  try {
+    const info = await forcarAtualizacao();
+    res.json({ ok: true, mensagem: 'Dados atualizados.', cache: info });
+  } catch (err) {
+    res.status(500).json({ ok: false, erro: err.message });
+  }
+});
+
+// ---- Status do cache (idade dos dados de cada relatório) ----
+app.get('/api/status', (req, res) => {
+  res.json({ status: 'ok', cache: infoCache() });
 });
 
 app.listen(PORT, () => {
   console.log(`[api] Plataforma de Relatórios rodando em http://localhost:${PORT}`);
+  // Pré-carrega os relatórios sem parâmetro para já subir com dados em cache.
+  aquecer([
+    { chave: 'rotas-supervisao', produtor: lerRotas },
+    { chave: 'geracao-cartao-ponto', produtor: buscarGeracaoCartaoPonto },
+  ]);
 });

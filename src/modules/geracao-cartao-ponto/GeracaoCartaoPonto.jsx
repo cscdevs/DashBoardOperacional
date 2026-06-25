@@ -283,7 +283,7 @@ export const GeracaoCartaoPonto = () => {
           </div>
 
           {/* Donut + Gauge */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+          <div className="grid-2-cols" style={{ alignItems: 'start' }}>
             <Card>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Qtd × Status</h3>
               <DonutChart data={distribuicaoStatus(linhas)} />
@@ -301,7 +301,7 @@ export const GeracaoCartaoPonto = () => {
           </Card>
 
           {/* Matriz por Empresa → Cliente */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+          <div className="grid-2-cols" style={{ alignItems: 'start' }}>
             <Card>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Por Empresa</h3>
               <TabelaResumo colunas={colsResumo('Empresa')} linhas={resumoPor(linhas, (l) => l.empresa)} total={tot(linhas)} />
@@ -324,7 +324,7 @@ export const GeracaoCartaoPonto = () => {
             </div>
           </Card>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+          <div className="grid-2-cols" style={{ alignItems: 'start' }}>
             <Card>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Pendências por Supervisão</h3>
               <BarChart

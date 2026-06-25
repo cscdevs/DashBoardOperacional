@@ -41,6 +41,21 @@ tailscale set --advertise-routes=192.168.0.58/32
 
 > ⚠️ A máquina precisa **ficar ligada** com o Tailscale conectado.
 
+## Resiliência a quedas de conexão
+
+Como a leitura é ao vivo, o backend tem um **cache resiliente** ([server/src/cache.js](../server/src/cache.js))
+para a plataforma não cair quando a internet desta máquina oscila:
+
+- **stale-while-revalidate**: responde na hora com o último dado e atualiza em background.
+- **stale-if-error**: se o banco ficar inacessível, mantém e serve o último dado bom (não dá erro).
+- **persistência em disco**: grava cada snapshot (volume `dashboard_cache` em `/app/.cache`);
+  no boot, sobe já com os dados pré-carregados — mesmo reiniciando durante uma queda.
+- **aquecimento no boot**: pré-carrega os relatórios assim que o backend sobe.
+
+Endpoints úteis: `GET /api/status` (idade dos dados em cache) e `POST /api/cache/limpar`
+(força atualização — o botão ↻ do header). Para os dados sobreviverem a um
+**redeploy** do container, mantenha o volume `dashboard_cache` no compose.
+
 ## Segurança — restringir a rota por ACL (recomendado)
 
 Sem ACL, qualquer dispositivo da tailnet alcança o `192.168.0.58:1433`. Limite

@@ -451,7 +451,7 @@ export const RotasSupervisao = () => {
       </Card>
 
       {/* KPIs */}
-      <div className="grid-1-2" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1.5rem' }}>
         <KpiCard titulo="Locais de Serviço" valor={kpis.locais} icone={MapPin} />
         <KpiCard titulo="Clientes" valor={kpis.clientes} icone={Building2} cor="var(--success)" fundo="var(--success-bg)" />
         <KpiCard titulo="Supervisores" valor={kpis.supervisores} icone={UserCheck} cor="var(--warning)" fundo="var(--warning-bg)" />

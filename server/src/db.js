@@ -7,8 +7,10 @@ const config = {
   database: process.env.DB_DATABASE,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  // A query de relatório é pesada; damos folga p/ conexão e execução.
-  connectionTimeout: 30000,
+  // Conexão: timeout curto para, durante uma oscilação de rede, falhar rápido
+  // e o cache resiliente servir o último dado bom (em vez de travar a tela).
+  connectionTimeout: Number(process.env.DB_CONNECT_TIMEOUT_MS) || 15000,
+  // A query de relatório é pesada; damos folga só para a execução.
   requestTimeout: Number(process.env.DB_REQUEST_TIMEOUT_MS) || 120000,
   options: {
     encrypt: String(process.env.DB_ENCRYPT).toLowerCase() === 'true',
