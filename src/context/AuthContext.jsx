@@ -27,8 +27,16 @@ export const AuthProvider = ({ children }) => {
     // Simulated API call
     return new Promise((resolve, reject) => {
       setTimeout(() => {
+        let userData = null;
         if (email === 'csc.devapoio@gmail.com' && password === 'SPTK.0509.EVE') {
-          const userData = { email, role: 'admin', name: 'Administrador' };
+          userData = { email, role: 'admin', name: 'Administrador' };
+        } else if (email === 'diretoria@csc.com.br' && password === 'Diretoria@2026') {
+          userData = { email, role: 'diretoria', name: 'Diretoria' };
+        } else if (email === 'gerencia@csc.com.br' && password === 'Gerencia@2026') {
+          userData = { email, role: 'gerencia', name: 'Gerência' };
+        }
+
+        if (userData) {
           setUser(userData);
           localStorage.setItem('dashboard_user', JSON.stringify(userData));
           resolve(true);
