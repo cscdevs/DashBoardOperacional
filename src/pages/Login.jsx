@@ -3,7 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Lock, Mail, MapPin } from 'lucide-react';
 import logo from '../assets/csc-logo.svg';
-import bgLogin from '../assets/bg-login.png';
+import bgLogin from '../assets/tech-login.png';
 
 export const Login = () => {
   const [email, setEmail] = useState('');

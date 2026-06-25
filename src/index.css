@@ -106,7 +106,7 @@ body {
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background-image: url('./assets/bg-dashboard.png');
+  background-image: url('./assets/tech-dashboard.png');
   background-size: cover;
   background-position: center;
   opacity: 0.1;
