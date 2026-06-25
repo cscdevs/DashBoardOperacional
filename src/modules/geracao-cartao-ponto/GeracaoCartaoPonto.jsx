@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '../../components/ui/Card';
+import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { fetchGeracaoCartaoPonto } from './api';
 import { BarChart, DonutChart, ColumnChart, Gauge, TabelaResumo } from './components/Charts';
@@ -66,8 +67,8 @@ const colsResumo = (rotuloPrimeiro) => [
 
 /* ------------------------------------------------------------------ */
 
-const KpiCard = ({ titulo, valor, subtitulo, icone: Icone, cor = 'var(--blue)', fundo = 'var(--blue-50)' }) => (
-  <Card className="card-3d-tilt stagger-item" style={{ position: 'relative', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+const KpiCard = ({ titulo, valor, subtitulo, icone: Icone, cor = 'var(--blue)', fundo = 'var(--blue-50)', onClick }) => (
+  <Card onClick={onClick} className={`card-3d-tilt stagger-item ${onClick ? 'kpi-card-clickable' : ''}`} style={{ position: 'relative', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
       <div style={{ minWidth: 0 }}>
         <p style={{ color: 'var(--gray-500)', fontSize: '0.8rem', fontWeight: 500, margin: 0 }}>{titulo}</p>
@@ -96,6 +97,7 @@ export const GeracaoCartaoPonto = () => {
   const [demitidosFiltro, setDemitidosFiltro] = useState('ativos');
   const [filtrosExtra, setFiltrosExtra] = useState({});
   const [busca, setBusca] = useState('');
+  const [detalheModal, setDetalheModal] = useState(null);
 
   const carregar = useCallback(() => {
     fetchGeracaoCartaoPonto()
@@ -157,6 +159,24 @@ export const GeracaoCartaoPonto = () => {
 
   return (
     <div className="full-width-page" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {detalheModal && (
+        <Modal isOpen={!!detalheModal} onClose={() => setDetalheModal(null)} titulo={`Detalhes: ${detalheModal.titulo}`}>
+          <div style={{ padding: '0.5rem 0' }}>
+            <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              Foram encontrados {fmtInt(linhas.filter(detalheModal.filtroFn).length)} registros para esta métrica.
+            </p>
+            <div style={{ overflowX: 'auto', background: 'var(--white)', borderRadius: '8px', border: '1px solid var(--gray-200)' }}>
+              <TabelaResumo cols={COLS_DETALHE} dados={linhas.filter(detalheModal.filtroFn).slice(0, LIMITE_LINHAS)} />
+            </div>
+            {linhas.filter(detalheModal.filtroFn).length > LIMITE_LINHAS && (
+              <p style={{textAlign: 'center', color: 'var(--gray-500)', fontSize: '0.8rem', marginTop: '1rem'}}>
+                Mostrando apenas os primeiros {LIMITE_LINHAS} registros. Exporte o CSV para ver todos.
+              </p>
+            )}
+          </div>
+        </Modal>
+      )}
+
       {/* Cabeçalho */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
@@ -276,9 +296,9 @@ export const GeracaoCartaoPonto = () => {
         <>
           {/* KPIs */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
-            <KpiCard titulo="Total de Cartões" valor={fmtInt(m.total)} icone={CalendarClock} />
-            <KpiCard titulo="Entregues" valor={fmtInt(m.entregue)} icone={CheckCircle2} cor="var(--success)" fundo="var(--success-bg)" />
-            <KpiCard titulo="Pendências" valor={fmtInt(m.pendencias)} icone={Clock} cor="var(--danger)" fundo="var(--danger-bg)" />
+            <KpiCard titulo="Total de Cartões" valor={fmtInt(m.total)} icone={CalendarClock} onClick={() => setDetalheModal({ titulo: 'Total de Cartões', filtroFn: () => true })} />
+            <KpiCard titulo="Entregues" valor={fmtInt(m.entregue)} icone={CheckCircle2} cor="var(--success)" fundo="var(--success-bg)" onClick={() => setDetalheModal({ titulo: 'Cartões Entregues', filtroFn: (x) => x.situacao === 'Entregue' })} />
+            <KpiCard titulo="Pendências" valor={fmtInt(m.pendencias)} icone={Clock} cor="var(--danger)" fundo="var(--danger-bg)" onClick={() => setDetalheModal({ titulo: 'Cartões Pendentes', filtroFn: (x) => x.situacao === 'Pendente' })} />
             <KpiCard titulo="% Entregue" valor={fmtPct(m.pctEntregue)} icone={Percent} cor="var(--blue)" fundo="var(--blue-50)" />
           </div>
 
@@ -350,9 +370,9 @@ export const GeracaoCartaoPonto = () => {
         <>
           {/* Valor total dos cartões filtrados */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
-            <KpiCard titulo="Total de Cartões" valor={fmtInt(m.total)} icone={CalendarClock} />
-            <KpiCard titulo="Entregues" valor={fmtInt(m.entregue)} icone={CheckCircle2} cor="var(--success)" fundo="var(--success-bg)" />
-            <KpiCard titulo="Pendências" valor={fmtInt(m.pendencias)} icone={Clock} cor="var(--danger)" fundo="var(--danger-bg)" />
+            <KpiCard titulo="Total de Cartões" valor={fmtInt(m.total)} icone={CalendarClock} onClick={() => setDetalheModal({ titulo: 'Total de Cartões (Gerente)', filtroFn: () => true })} />
+            <KpiCard titulo="Entregues" valor={fmtInt(m.entregue)} icone={CheckCircle2} cor="var(--success)" fundo="var(--success-bg)" onClick={() => setDetalheModal({ titulo: 'Cartões Entregues (Gerente)', filtroFn: (x) => x.situacao === 'Entregue' })} />
+            <KpiCard titulo="Pendências" valor={fmtInt(m.pendencias)} icone={Clock} cor="var(--danger)" fundo="var(--danger-bg)" onClick={() => setDetalheModal({ titulo: 'Cartões Pendentes (Gerente)', filtroFn: (x) => x.situacao === 'Pendente' })} />
             <KpiCard titulo="% Entregue" valor={fmtPct(m.pctEntregue)} icone={Percent} cor="var(--blue)" fundo="var(--blue-50)" />
           </div>
 

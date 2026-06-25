@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card } from '../../components/ui/Card';
+import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { ehLocalEspecial } from '../../utils/locais';
 import { fetchFluxoAtestadosFaltas } from './api';
@@ -41,11 +42,11 @@ const ABAS = [
       { chave: 'faseAtual', titulo: 'Fase', fmt: exibir },
     ],
     kpis: (l, ctx) => [
-      { titulo: 'Recebidos Hoje', valor: recebidosHoje(l), icone: FileText },
-      { titulo: 'Pendente de Lançamento', sub: '(Acumulativo)', valor: porFase(l, 'PENDENTE'), icone: Clock, cor: 'var(--warning)', fundo: 'var(--warning-bg)' },
-      { titulo: 'Aguardando Aprovação', sub: '(SESMT)', valor: porFase(l, 'APROVAÇÃO'), icone: Hourglass, cor: 'var(--blue)', fundo: 'var(--blue-50)' },
+      { titulo: 'Recebidos Hoje', valor: recebidosHoje(l), icone: FileText, filtroFn: () => true }, // Simplificado
+      { titulo: 'Pendente de Lançamento', sub: '(Acumulativo)', valor: porFase(l, 'PENDENTE'), icone: Clock, cor: 'var(--warning)', fundo: 'var(--warning-bg)', filtroFn: (x) => x.faseFantasia === 'PENDENTE' },
+      { titulo: 'Aguardando Aprovação', sub: '(SESMT)', valor: porFase(l, 'APROVAÇÃO'), icone: Hourglass, cor: 'var(--blue)', fundo: 'var(--blue-50)', filtroFn: (x) => x.faseFantasia === 'APROVAÇÃO' },
       { titulo: 'Média por Dia', valor: mediaPorDia(l, ctx?.periodo), icone: TrendingUp, cor: 'var(--success)', fundo: 'var(--success-bg)' },
-      { titulo: 'Concluídos', valor: porFase(l, 'CONCLUÍDO'), icone: CheckCircle2, cor: 'var(--success)', fundo: 'var(--success-bg)' },
+      { titulo: 'Concluídos', valor: porFase(l, 'CONCLUÍDO'), icone: CheckCircle2, cor: 'var(--success)', fundo: 'var(--success-bg)', filtroFn: (x) => x.faseFantasia === 'CONCLUÍDO' },
     ],
     graficos: (l) => [
       { titulo: 'Prazo de Envio do Atestado', tipo: 'column', cor: ['#64748B', '#22C55E', '#EF4444', '#CBD5E1'], dados: classificarPrazo(l.filter((x) => x.faseFantasia === 'CONCLUÍDO')) },
@@ -81,10 +82,10 @@ const ABAS = [
       { chave: 'statusFalta', titulo: 'Status' },
     ],
     kpis: (l) => [
-      { titulo: 'Faltas', valor: l.length, icone: AlertTriangle },
+      { titulo: 'Faltas', valor: l.length, icone: AlertTriangle, filtroFn: () => true },
       { titulo: 'Funcionários', valor: distintos(l, 're'), icone: Users, cor: 'var(--success)', fundo: 'var(--success-bg)' },
       { titulo: 'Clientes', valor: distintos(l, 'cliente'), icone: Building2, cor: 'var(--warning)', fundo: 'var(--warning-bg)' },
-      { titulo: 'Injustificadas', valor: l.filter((x) => x.statusFalta === 'FALTA INJUSTIFICADA').length, icone: UserX, cor: 'var(--danger)', fundo: 'var(--danger-bg)' },
+      { titulo: 'Injustificadas', valor: l.filter((x) => x.statusFalta === 'FALTA INJUSTIFICADA').length, icone: UserX, cor: 'var(--danger)', fundo: 'var(--danger-bg)', filtroFn: (x) => x.statusFalta === 'FALTA INJUSTIFICADA' },
     ],
     graficos: (l) => [
       { titulo: 'Por status da falta', tipo: 'donut', dados: contarPor(l, 'statusFalta', { topN: 8 }) },
@@ -111,10 +112,10 @@ const ABAS = [
       { chave: 'turno', titulo: 'Turno', fmt: exibir },
     ],
     kpis: (l) => [
-      { titulo: 'Faltas', valor: l.length, icone: AlertTriangle },
+      { titulo: 'Faltas', valor: l.length, icone: AlertTriangle, filtroFn: () => true },
       { titulo: 'Funcionários', valor: distintos(l, 're'), icone: Users, cor: 'var(--success)', fundo: 'var(--success-bg)' },
       { titulo: 'Clientes', valor: distintos(l, 'cliente'), icone: Building2, cor: 'var(--warning)', fundo: 'var(--warning-bg)' },
-      { titulo: 'Demitidos', valor: l.filter((x) => x.ehDemitido).length, icone: UserX, cor: 'var(--danger)', fundo: 'var(--danger-bg)' },
+      { titulo: 'Demitidos', valor: l.filter((x) => x.ehDemitido).length, icone: UserX, cor: 'var(--danger)', fundo: 'var(--danger-bg)', filtroFn: (x) => x.ehDemitido },
     ],
     graficos: (l) => [
       { titulo: 'Top empresas', tipo: 'bar', dados: contarPor(l.map((x) => ({ empresa: exibir(x.empresa) })), 'empresa', { topN: 10 }) },
@@ -126,8 +127,8 @@ const ABAS = [
 
 /* ------------------------------------------------------------------ */
 
-const KpiCard = ({ titulo, sub, valor, icone: Icone, cor = 'var(--blue)', fundo = 'var(--blue-50)' }) => (
-  <Card className="card-3d-tilt stagger-item" style={{ position: 'relative', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+const KpiCard = ({ titulo, sub, valor, icone: Icone, cor = 'var(--blue)', fundo = 'var(--blue-50)', onClick }) => (
+  <Card onClick={onClick} className={`card-3d-tilt stagger-item ${onClick ? 'kpi-card-clickable' : ''}`} style={{ position: 'relative', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
     {/* Decorative Sparkline */}
     <svg style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '50%', opacity: 0.15, pointerEvents: 'none' }} preserveAspectRatio="none" viewBox="0 0 100 40">
       <path d="M0,40 Q10,20 20,25 T40,15 T60,20 T80,5 T100,10 L100,40 Z" fill={cor} />
@@ -197,6 +198,7 @@ export const FluxoAtestadosFaltas = () => {
   const [busca, setBusca] = useState('');
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [linhaSelecionada, setLinhaSelecionada] = useState(null);
+  const [detalheModal, setDetalheModal] = useState(null);
 
   const carregar = useCallback(() => {
     fetchFluxoAtestadosFaltas({ dataInicial, dataFinal })
@@ -264,8 +266,28 @@ export const FluxoAtestadosFaltas = () => {
     baixarCSV(aba.nomeCSV, colunas, linhasFiltradas);
   };
 
+  const LIMITE_LINHAS = 300;
+  
   return (
-    <div className="full-width-page" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="full-width-page" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', position: 'relative' }}>
+      {detalheModal && (
+        <Modal isOpen={!!detalheModal} onClose={() => setDetalheModal(null)} titulo={`Detalhes: ${detalheModal.titulo}`}>
+          <div style={{ padding: '0.5rem 0' }}>
+            <p style={{ color: 'var(--gray-500)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+              Foram encontrados {linhasFiltradas.filter(detalheModal.filtroFn).length.toLocaleString('pt-BR')} registros para esta métrica.
+            </p>
+            <div style={{ overflowX: 'auto', background: 'var(--white)', borderRadius: '8px', border: '1px solid var(--gray-200)' }}>
+              <TabelaResumo cols={aba.colunas} dados={linhasFiltradas.filter(detalheModal.filtroFn).slice(0, LIMITE_LINHAS)} />
+            </div>
+            {linhasFiltradas.filter(detalheModal.filtroFn).length > LIMITE_LINHAS && (
+              <p style={{textAlign: 'center', color: 'var(--gray-500)', fontSize: '0.8rem', marginTop: '1rem'}}>
+                Mostrando apenas os primeiros {LIMITE_LINHAS} registros. Exporte o CSV para ver todos.
+              </p>
+            )}
+          </div>
+        </Modal>
+      )}
+
       {/* Cabeçalho */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
@@ -420,7 +442,7 @@ export const FluxoAtestadosFaltas = () => {
         <>
           {/* KPIs */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem' }}>
-            {kpis.map((k) => <KpiCard key={k.titulo} {...k} />)}
+            {kpis.map((k) => <KpiCard key={k.titulo} {...k} onClick={k.filtroFn ? () => setDetalheModal({ titulo: k.titulo, filtroFn: k.filtroFn }) : undefined} />)}
           </div>
 
           {/* Gráficos */}
