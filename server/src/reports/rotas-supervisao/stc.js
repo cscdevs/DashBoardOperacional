@@ -122,36 +122,70 @@ function emLotes(arr, n) {
 
 let cacheViaturas = null; // { dados: Map(placaNorm -> info), expiraEm }
 
+// Fonte das viaturas em uso: SQL Server (dev/motor) ou Supabase (VPS, lê o
+// snapshot gravado pelo motor de sync).
+const DATA_SOURCE_VIATURAS = (process.env.DATA_SOURCE || 'sqlserver').toLowerCase();
+
 /**
- * Viaturas EM USO no momento (BDV aberto no SQL Server), indexadas pela placa
- * normalizada. Liga a placa ao supervisor que está dirigindo agora.
- * -> Map(placaNorm -> { funcionario, supervisorNome, empresa, desde })
- *
- * Degrada graciosamente: se o SQL Server não estiver acessível (ex.: rodando
- * no VPS com DATA_SOURCE=supabase, sem a tabela BDV), devolve um Map vazio —
- * os veículos aparecem sem supervisor, sem quebrar a rota.
+ * Lê do SQL Server (BDV) as viaturas EM USO agora.
+ * -> array [{ placa, re, funcionario, supervisorNome, empresa, desde }]
+ * Usado no modo sqlserver e pelo MOTOR de sync (que grava no Supabase).
+ */
+export async function listarViaturasEmUsoSQL() {
+  const SQL = readFileSync(SQL_VIATURAS, 'utf-8');
+  const rows = await query(SQL);
+  const lista = [];
+  for (const r of rows) {
+    const placa = (r.PLACA || '').toString().trim();
+    if (!placa) continue;
+    const funcionario = (r.FUNCIONARIO || '').toString().trim();
+    lista.push({
+      placa,
+      re: r.RE != null ? String(r.RE) : null,
+      funcionario,
+      supervisorNome: casarSupervisorPorNome(funcionario) || funcionario || null,
+      empresa: r.EMPRESA || null,
+      desde: r.DTHRINICIO || null,
+    });
+  }
+  return lista;
+}
+
+/** Map(placaNorm -> { funcionario, supervisorNome, empresa, desde }) a partir da lista. */
+function mapaPorPlaca(lista) {
+  const mapa = new Map();
+  for (const v of lista) {
+    const placa = normPlaca(v.placa);
+    if (!placa) continue;
+    mapa.set(placa, {
+      funcionario: v.funcionario,
+      supervisorNome: v.supervisorNome,
+      empresa: v.empresa,
+      desde: v.desde,
+    });
+  }
+  return mapa;
+}
+
+/**
+ * Viaturas em uso indexadas pela placa normalizada. A fonte depende de
+ * DATA_SOURCE: SQL Server (dev/motor) ou Supabase (produção no VPS). Degrada
+ * para Map vazio se a fonte falhar — os veículos aparecem sem supervisor.
  */
 async function buscarViaturasEmUso() {
   const agora = Date.now();
   if (cacheViaturas && cacheViaturas.expiraEm > agora) return cacheViaturas.dados;
 
-  const mapa = new Map();
+  let mapa = new Map();
   try {
-    const SQL = readFileSync(SQL_VIATURAS, 'utf-8');
-    const rows = await query(SQL);
-    for (const r of rows) {
-      const placa = normPlaca(r.PLACA);
-      if (!placa) continue;
-      const funcionario = (r.FUNCIONARIO || '').toString().trim();
-      mapa.set(placa, {
-        funcionario,
-        supervisorNome: casarSupervisorPorNome(funcionario) || funcionario || null,
-        empresa: r.EMPRESA || null,
-        desde: r.DTHRINICIO || null,
-      });
+    if (DATA_SOURCE_VIATURAS === 'supabase') {
+      const { listarViaturasEmUsoNuvem } = await import('./rotas-supervisao-nuvem.js');
+      mapa = mapaPorPlaca(await listarViaturasEmUsoNuvem());
+    } else {
+      mapa = mapaPorPlaca(await listarViaturasEmUsoSQL());
     }
   } catch (err) {
-    console.warn('[stc] Não foi possível ler viaturas em uso (BDV):', err.message);
+    console.warn('[stc] Não foi possível ler viaturas em uso:', err.message);
   }
 
   cacheViaturas = { dados: mapa, expiraEm: agora + TTL_VIATURAS };

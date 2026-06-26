@@ -59,3 +59,22 @@ export async function buscarRotasDaNuvem() {
     };
   });
 }
+
+/**
+ * Viaturas em uso (snapshot na nuvem, gravado pelo motor) -> array
+ * [{ placa, re, funcionario, supervisorNome, empresa, desde }].
+ * Mesmo formato de listarViaturasEmUsoSQL, p/ o stc.js enriquecer no VPS.
+ */
+export async function listarViaturasEmUsoNuvem() {
+  const { rows } = await query(
+    `SELECT placa, re, funcionario, supervisor_nome, empresa, desde FROM viaturas_em_uso`
+  );
+  return rows.map((r) => ({
+    placa: r.placa,
+    re: r.re,
+    funcionario: r.funcionario,
+    supervisorNome: r.supervisor_nome,
+    empresa: r.empresa,
+    desde: r.desde,
+  }));
+}

@@ -17,6 +17,7 @@
 import 'dotenv/config';
 import { buscarRotas } from '../reports/rotas-supervisao/rotas-supervisao.js';
 import { getPool } from './supabase-db.js';
+import { listarViaturasEmUsoSQL } from '../reports/rotas-supervisao/stc.js';
 
 const TAMANHO_LOTE = Number(process.env.SYNC_BATCH_SIZE) || 500;
 
@@ -104,6 +105,27 @@ async function main() {
       [syncId]
     );
     console.log(`[sync] Concluído com sucesso. Snapshot atualizado (${inseridas} linhas).`);
+
+    // --- Viaturas EM USO (BDV) -> snapshot na nuvem (transação própria) ---
+    // São poucas linhas (dezenas); insere uma a uma p/ simplicidade. Se falhar,
+    // só loga: o snapshot de rotas (já commitado) não é afetado.
+    try {
+      const viaturas = await listarViaturasEmUsoSQL();
+      await client.query('BEGIN');
+      await client.query('TRUNCATE TABLE viaturas_em_uso');
+      for (const v of viaturas) {
+        await client.query(
+          `INSERT INTO viaturas_em_uso (placa, re, funcionario, supervisor_nome, empresa, desde)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [v.placa, v.re, v.funcionario, v.supervisorNome, v.empresa, v.desde]
+        );
+      }
+      await client.query('COMMIT');
+      console.log(`[sync] Viaturas em uso: ${viaturas.length} sincronizadas.`);
+    } catch (errV) {
+      await client.query('ROLLBACK').catch(() => {});
+      console.warn('[sync] Falha ao sincronizar viaturas em uso (segue sem elas):', errV.message);
+    }
   } catch (err) {
     try {
       await client.query('ROLLBACK');

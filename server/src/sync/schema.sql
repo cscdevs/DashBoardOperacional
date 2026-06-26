@@ -62,6 +62,21 @@ CREATE INDEX IF NOT EXISTS idx_rotas_base            ON rotas_supervisao (base_o
 CREATE INDEX IF NOT EXISTS idx_rotas_supervisor_nome ON rotas_supervisao (supervisor_nome);
 CREATE INDEX IF NOT EXISTS idx_rotas_cod_local       ON rotas_supervisao (cod_local);
 
+-- Viaturas EM USO agora (BDV aberto) — snapshot p/ o VPS enriquecer a posição
+-- ao vivo com o supervisor (cruza pela placa). Atualizado a cada execução do
+-- motor (TRUNCATE + INSERT), como o snapshot de rotas.
+CREATE TABLE IF NOT EXISTS viaturas_em_uso (
+  id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  placa            TEXT,
+  re               TEXT,
+  funcionario      TEXT,
+  supervisor_nome  TEXT,
+  empresa          TEXT,
+  desde            TIMESTAMPTZ,
+  sincronizado_em  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_viaturas_placa ON viaturas_em_uso (placa);
+
 -- Log de cada sincronização (auditoria / saúde do motor).
 CREATE TABLE IF NOT EXISTS sincronizacoes (
   id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
