@@ -169,6 +169,7 @@ export async function buscarPosicoesVeiculos() {
   const agora = Date.now();
   if (cachePosicoes && cachePosicoes.expiraEm > agora) return cachePosicoes.dados;
 
+  try {
   const catalogo = await listarVeiculos();
   const porDevice = new Map(catalogo.map((v) => [String(v.deviceId), v]));
   const deviceIds = catalogo.map((v) => v.deviceId);
@@ -217,6 +218,17 @@ export async function buscarPosicoesVeiculos() {
   };
   cachePosicoes = { dados, expiraEm: agora + TTL_POSICOES };
   return dados;
+  } catch (err) {
+    // stale-if-error: se a STC limitar (HTTP 429) ou cair, devolve a última
+    // posicao boa do cache em vez de quebrar a tela. Aplica um pequeno cooldown
+    // para nao martelar a STC enquanto ela esta bloqueando.
+    if (cachePosicoes?.dados) {
+      console.warn("[stc] Falha ao atualizar posicoes (" + err.message + "); servindo cache.");
+      cachePosicoes.expiraEm = agora + 30 * 1000;
+      return cachePosicoes.dados;
+    }
+    throw err;
+  }
 }
 
 // ---- Trajeto (rastro) com cache incremental por placa ----
