@@ -35,5 +35,4 @@ dist-ssr
 SUPERVISAO  carro.xlsx
 areas-sem-gerente.csv
 server/src/find_missing.js
-server/src/shared/pontos-supervisores.json
 server/src/shared/.pontos-geocache.json
