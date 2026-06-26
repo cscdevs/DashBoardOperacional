@@ -336,6 +336,23 @@ export const RotasSupervisao = () => {
     [veiculos]
   );
 
+  // Viaturas de supervisão (em uso) dentro do raio de ALGUM ponto de apoio.
+  const viaturasPertoApoio = useMemo(
+    () =>
+      pontosApoio.length === 0
+        ? []
+        : veiculos.filter((v) => {
+            // So conta viatura EM USO e PARADA no PROPRIO ponto de apoio do
+            // supervisor (casa pelo nome curto), dentro do raio.
+            if (!v.coordinates || !v.emUso || v.emMovimento) return false;
+            const ponto = pontosApoio.find(
+              (p) => p.coordinates && p.supervisor && p.supervisor === v.supervisorNome
+            );
+            return !!ponto && distanciaKm(ponto.coordinates, v.coordinates) <= RAIO_BASE_KM;
+          }),
+    [veiculos, pontosApoio]
+  );
+
   const limparFiltros = () => {
     setBusca('');
     setFEmpresa('');
@@ -505,6 +522,7 @@ export const RotasSupervisao = () => {
         <KpiCard titulo="Supervisores" valor={kpis.supervisores} icone={UserCheck} cor="var(--warning)" fundo="var(--warning-bg)" />
         <KpiCard titulo="Cidades" valor={kpis.cidades} icone={Users} />
         <KpiCard titulo={`Perto da Base (${RAIO_BASE_KM} km)`} valor={viaturasPertoBase.length} icone={Car} cor="var(--blue)" fundo="var(--blue-50)" />
+        <KpiCard titulo={`Perto do Apoio (${RAIO_BASE_KM} km)`} valor={viaturasPertoApoio.length} icone={Star} cor="var(--danger)" fundo="var(--danger-bg)" />
       </div>
 
       {/* Mapa */}

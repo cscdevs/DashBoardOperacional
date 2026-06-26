@@ -315,28 +315,28 @@ function BaseLayer() {
   return null;
 }
 
-// Ponto de apoio do supervisor: losango na cor do supervisor (forma diferente
-// dos locais/carros, sem revelar que é endereço residencial).
-const iconePontoApoio = (cor) =>
+// Ponto de apoio do supervisor: triângulo vermelho (forma/cor diferentes dos
+// locais/carros, sem revelar que é endereço residencial).
+const iconePontoApoio = () =>
   L.divIcon({
     className: 'custom-leaflet-marker',
-    html: `<div style="width:15px;height:15px;background:${cor};
-        border:2px solid #fff;transform:rotate(45deg);
-        box-shadow:0 0 0 1.5px rgba(0,0,0,.55)"></div>`,
-    iconSize: [15, 15],
-    iconAnchor: [7, 7],
-    popupAnchor: [0, -8],
+    html: `<div style="width:0;height:0;
+        border-left:9px solid transparent;border-right:9px solid transparent;
+        border-bottom:16px solid #EF4444;
+        filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.6))"></div>`,
+    iconSize: [18, 16],
+    iconAnchor: [9, 8],
+    popupAnchor: [0, -10],
   });
 
 /** Camada dos pontos de apoio dos supervisores (rótulo neutro). */
-function PontosApoioLayer({ pontos, coresPorSupervisor }) {
+function PontosApoioLayer({ pontos }) {
   const map = useMap();
   useEffect(() => {
     const group = L.layerGroup();
     pontos.forEach((p) => {
       if (!p.coordinates) return;
-      const cor = corDoSupervisor(p.nome, coresPorSupervisor);
-      const m = L.marker(p.coordinates, { icon: iconePontoApoio(cor), zIndexOffset: 600 });
+      const m = L.marker(p.coordinates, { icon: iconePontoApoio(), zIndexOffset: 600 });
       m.bindTooltip(`Ponto de apoio — ${esc(tituloCase(p.nome))}`, { direction: 'top', offset: [0, -8] });
       m.bindPopup(
         `<strong style="color:#1B0DAE">${esc(tituloCase(p.nome))}</strong>
@@ -346,7 +346,7 @@ function PontosApoioLayer({ pontos, coresPorSupervisor }) {
     });
     map.addLayer(group);
     return () => map.removeLayer(group);
-  }, [map, pontos, coresPorSupervisor]);
+  }, [map, pontos]);
   return null;
 }
 
@@ -390,9 +390,7 @@ export const RotasMap = ({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <BaseLayer />
-          {pontosApoio.length > 0 && (
-            <PontosApoioLayer pontos={pontosApoio} coresPorSupervisor={coresPorSupervisor} />
-          )}
+          {pontosApoio.length > 0 && <PontosApoioLayer pontos={pontosApoio} />}
           {mostrarLocais && <ClusterLayer rotas={comCoord} coresPorSupervisor={coresPorSupervisor} />}
           {trajeto?.pontos?.length > 1 && (
             <TrailLayer pontos={trajeto.pontos} cor={corTrajeto} paradas={trajeto.paradas || []} />
