@@ -55,14 +55,12 @@ export function medidas(linhas) {
  *
  * @param {Array<object>} linhas
  * @param {(l:object)=>string} getLabel  como montar o rótulo do grupo
- * @param {{ ordenarPor?: 'pendencias'|'total'|'label', formatarLabel?: boolean, ocultarSemGrupo?: boolean }} opcoes
- *        ocultarSemGrupo: omite o grupo "—" (registros sem valor na chave).
+ * @param {{ ordenarPor?: 'pendencias'|'total'|'label', formatarLabel?: boolean }} opcoes
  */
-export function resumoPor(linhas, getLabel, { ordenarPor = 'pendencias', formatarLabel = true, ocultarSemGrupo = false } = {}) {
+export function resumoPor(linhas, getLabel, { ordenarPor = 'pendencias', formatarLabel = true } = {}) {
   const grupos = new Map();
   for (const l of linhas) {
     const bruto = getLabel(l);
-    if (ocultarSemGrupo && (bruto == null || bruto === '')) continue;
     const chave = bruto == null || bruto === '' ? '—' : String(bruto);
     if (!grupos.has(chave)) grupos.set(chave, []);
     grupos.get(chave).push(l);

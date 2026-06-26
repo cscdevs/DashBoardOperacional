@@ -144,6 +144,10 @@ export const GeracaoCartaoPonto = () => {
     if (demitidosFiltro === 'ativos') l = l.filter((x) => !x.ehDemitido);
     if (demitidosFiltro === 'demitidos') l = l.filter((x) => x.ehDemitido);
     if (empresa) l = l.filter((x) => String(x.empresa ?? '') === empresa);
+    // Regra de negócio: cartões sem gerente no de-para ficam FORA do relatório
+    // inteiro (KPIs, gráficos e tabelas). Some que a planilha de gerentes for
+    // completada (ver areas-sem-gerente.csv), eles voltam a aparecer.
+    l = l.filter((x) => x.gerente);
     return l;
   }, [registros, demitidosFiltro, empresa]);
 
@@ -370,7 +374,7 @@ export const GeracaoCartaoPonto = () => {
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Pendências por Gerente</h3>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <BarChart
-                  data={resumoPor(linhas, (l) => l.gerente, { ordenarPor: 'pendencias', ocultarSemGrupo: true })
+                  data={resumoPor(linhas, (l) => l.gerente, { ordenarPor: 'pendencias' })
                     .filter((g) => g.pendencias > 0)
                     .map((g) => ({ label: g.label, value: g.pendencias }))}
                   cor={(d) => corDeRotulo(d.label)}
@@ -397,7 +401,7 @@ export const GeracaoCartaoPonto = () => {
                   </span>
                 ),
               }))}
-              linhas={resumoPor(linhas, (l) => l.gerente, { ocultarSemGrupo: true })}
+              linhas={resumoPor(linhas, (l) => l.gerente)}
               total={tot(linhas)}
               altura={520}
             />
