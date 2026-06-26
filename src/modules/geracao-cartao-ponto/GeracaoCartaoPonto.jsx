@@ -357,12 +357,20 @@ export const GeracaoCartaoPonto = () => {
         </>
       ) : abaId === 'gerente' ? (
         <>
+          {/* KPIs (mesma faixa da Visão Geral) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+            <KpiCard titulo="Total de Cartões" valor={fmtInt(m.total)} icone={CalendarClock} onClick={() => setDetalheModal({ titulo: 'Total de Cartões', filtroFn: () => true })} />
+            <KpiCard titulo="Entregues" valor={fmtInt(m.entregue)} icone={CheckCircle2} cor="var(--success)" fundo="var(--success-bg)" onClick={() => setDetalheModal({ titulo: 'Cartões Entregues', filtroFn: (x) => x.situacao === 'Entregue' })} />
+            <KpiCard titulo="Pendências" valor={fmtInt(m.pendencias)} icone={Clock} cor="var(--danger)" fundo="var(--danger-bg)" onClick={() => setDetalheModal({ titulo: 'Cartões Pendentes', filtroFn: (x) => x.situacao === 'Pendente' })} />
+            <KpiCard titulo="% Entregue" valor={fmtPct(m.pctEntregue)} icone={Percent} cor="var(--blue)" fundo="var(--blue-50)" />
+          </div>
+
           <div className="grid-2-cols" style={{ alignItems: 'stretch' }}>
             <Card style={{ display: 'flex', flexDirection: 'column' }}>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Pendências por Gerente</h3>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <BarChart
-                  data={resumoPor(linhas, (l) => l.gerente, { ordenarPor: 'pendencias' })
+                  data={resumoPor(linhas, (l) => l.gerente, { ordenarPor: 'pendencias', ocultarSemGrupo: true })
                     .filter((g) => g.pendencias > 0)
                     .map((g) => ({ label: g.label, value: g.pendencias }))}
                   cor={(d) => corDeRotulo(d.label)}
@@ -389,7 +397,7 @@ export const GeracaoCartaoPonto = () => {
                   </span>
                 ),
               }))}
-              linhas={resumoPor(linhas, (l) => l.gerente)}
+              linhas={resumoPor(linhas, (l) => l.gerente, { ocultarSemGrupo: true })}
               total={tot(linhas)}
               altura={520}
             />

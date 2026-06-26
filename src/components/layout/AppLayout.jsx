@@ -31,6 +31,12 @@ export const AppLayout = () => {
   const [isTvModeIdle, setIsTvModeIdle] = useState(false);
   const idleTimerRef = useRef(null);
 
+  // Modo TV: escala o conteúdo para caber 100% na tela (qualquer resolução),
+  // sem barra de rolagem. Mede o conteúdo "natural" e calcula o fator.
+  const fitOuterRef = useRef(null);
+  const fitInnerRef = useRef(null);
+  const [fitScale, setFitScale] = useState(1);
+
   const { logout, user } = useAuth();
 
   useEffect(() => {
@@ -67,6 +73,40 @@ export const AppLayout = () => {
     return () => {
       window.removeEventListener('mousemove', resetIdleTimer);
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, [isTvMode]);
+
+  // Recalcula o fator de escala do Modo TV sempre que o conteúdo, a janela ou
+  // o próprio modo mudarem. Como `transform: scale` não altera o layout-box, a
+  // medição (scrollWidth/Height) continua sendo a do conteúdo em escala 1:1 —
+  // não há loop de realimentação.
+  useEffect(() => {
+    if (!isTvMode) {
+      setFitScale(1);
+      return undefined;
+    }
+    const inner = fitInnerRef.current;
+    const outer = fitOuterRef.current;
+    if (!inner || !outer) return undefined;
+
+    const recompute = () => {
+      const dispW = outer.clientWidth;
+      const dispH = outer.clientHeight;
+      const contW = inner.scrollWidth;
+      const contH = inner.scrollHeight;
+      if (!contW || !contH) return;
+      // Nunca amplia (máx. 1); só reduz o necessário para caber por inteiro.
+      setFitScale(Math.min(1, dispW / contW, dispH / contH));
+    };
+
+    const ro = new ResizeObserver(recompute);
+    ro.observe(inner);
+    ro.observe(outer);
+    window.addEventListener('resize', recompute);
+    recompute();
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', recompute);
     };
   }, [isTvMode]);
 
@@ -253,8 +293,16 @@ export const AppLayout = () => {
 
         <SpotlightSearch />
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '2rem 1rem' }}>
-          <div className="app-container fade-in">
+        <div
+          ref={fitOuterRef}
+          className="layout-content"
+          style={{ flex: 1, overflowY: 'auto', padding: '2rem 1rem' }}
+        >
+          <div
+            ref={fitInnerRef}
+            className="app-container fade-in"
+            style={isTvMode ? { transform: `scale(${fitScale})`, transformOrigin: 'top center' } : undefined}
+          >
             <Outlet />
           </div>
         </div>

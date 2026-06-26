@@ -829,6 +829,20 @@ button {
   padding: 1rem !important; /* TV Mode respiro */
 }
 
+/* Modo TV "fit-to-screen": o conteúdo é escalado (via transform no JSX) para
+   caber 100% na viewport, sem rolagem, em qualquer resolução. O container
+   externo não rola e ancora o conteúdo no topo. */
+.tv-mode-active .layout-content {
+  overflow: hidden !important;
+  padding: 0 !important;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+.tv-mode-active .layout-content > .app-container {
+  width: 100%;
+}
+
 .tv-exit-btn {
   position: fixed;
   top: 1rem;
