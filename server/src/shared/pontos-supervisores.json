@@ -8,6 +8,14 @@
 ]
 },
 {
+"nome": "CAMILA OLIVEIRA PEREIRA",
+"placa": "TXH0F71",
+"coordinates": [
+-23.5765002,
+-46.5814208
+]
+},
+{
 "nome": "CARLA SANTANA DA SILVA",
 "placa": "TEN7169",
 "coordinates": [
@@ -48,6 +56,38 @@
 ]
 },
 {
+"nome": "VALDIRENE DA SILVA",
+"placa": "TDJ1A09",
+"coordinates": [
+-23.5375505,
+-46.445792
+]
+},
+{
+"nome": "CLEITON ROGERIO ANDRADE",
+"placa": "TXO1G06",
+"coordinates": [
+-22.0276792,
+-47.8811159
+]
+},
+{
+"nome": "ADRIANO APARECIDO DA SILVA",
+"placa": "TBN6I02",
+"coordinates": [
+-23.7372222,
+-46.7756428
+]
+},
+{
+"nome": "ALBERICO RIBEIRO FONSECA",
+"placa": "TEX1G43",
+"coordinates": [
+-23.5870423,
+-46.4039627
+]
+},
+{
 "nome": "CASSIANE DA SILVA GARCIA",
 "placa": "TEH6F57",
 "coordinates": [
@@ -61,6 +101,30 @@
 "coordinates": [
 -23.5109641,
 -46.4310136
+]
+},
+{
+"nome": "ROBSON CELESTINO DA SILVA",
+"placa": "TEN7H49",
+"coordinates": [
+-23.4711424,
+-46.6649629
+]
+},
+{
+"nome": "WELITON RAMOS",
+"placa": "TXM1H77",
+"coordinates": [
+-23.5026808,
+-46.5168995
+]
+},
+{
+"nome": "Carlos Eduardo Avian",
+"placa": "TDI1J35",
+"coordinates": [
+-23.4631603,
+-46.7391449
 ]
 },
 {
@@ -88,6 +152,14 @@
 ]
 },
 {
+"nome": "ELISANGELA DE OLIVEIRA BEZERRA PEREIRA",
+"placa": "TBI4F49",
+"coordinates": [
+-23.6470325,
+-46.6075969
+]
+},
+{
 "nome": "JAIR GANZAROLLI",
 "placa": "RESERVA",
 "coordinates": [
@@ -104,27 +176,11 @@
 ]
 },
 {
-"nome": "RESERVA/BASE",
-"placa": "FVF5C84",
+"nome": "WILLIAN VIEIRA",
+"placa": "RESERVA",
 "coordinates": [
--10.3333333,
--53.2
-]
-},
-{
-"nome": "RESERVA/BASE",
-"placa": "FWH0G95",
-"coordinates": [
--10.3333333,
--53.2
-]
-},
-{
-"nome": "RESERVA/BASE",
-"placa": "FQD3F17",
-"coordinates": [
--10.3333333,
--53.2
+-23.5382506,
+-46.4705549
 ]
 }
 ]

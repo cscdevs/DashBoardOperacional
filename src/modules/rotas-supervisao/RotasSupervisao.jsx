@@ -97,6 +97,20 @@ function distanciaKm([lat1, lon1], [lat2, lon2]) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// Casa nomes de supervisor por PREFIXO de tokens: "CARLA" ~ "CARLA SANTANA DA
+// SILVA" (viatura com nome curto x ponto com nome completo), e nomes completos
+// iguais tambem casam. Independe do de-para de rotas.
+function mesmoSupervisor(a, b) {
+  const norm = (s) =>
+    (s || "").toString().normalize("NFD").replace(/p{Diacritic}/gu, "").replace(/s+/g, " ").trim().toUpperCase();
+  const ta = norm(a).split(" ").filter(Boolean);
+  const tb = norm(b).split(" ").filter(Boolean);
+  if (!ta.length || !tb.length) return false;
+  const n = Math.min(ta.length, tb.length);
+  for (let i = 0; i < n; i += 1) if (ta[i] !== tb[i]) return false;
+  return true;
+}
+
 export const RotasSupervisao = () => {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
@@ -343,10 +357,10 @@ export const RotasSupervisao = () => {
         ? []
         : veiculos.filter((v) => {
             // So conta viatura EM USO e PARADA no PROPRIO ponto de apoio do
-            // supervisor (casa pelo nome curto), dentro do raio.
+            // supervisor (casa por prefixo de nome), dentro do raio.
             if (!v.coordinates || !v.emUso || v.emMovimento) return false;
             const ponto = pontosApoio.find(
-              (p) => p.coordinates && p.supervisor && p.supervisor === v.supervisorNome
+              (p) => p.coordinates && mesmoSupervisor(p.nome, v.supervisorNome)
             );
             return !!ponto && distanciaKm(ponto.coordinates, v.coordinates) <= RAIO_BASE_KM;
           }),
