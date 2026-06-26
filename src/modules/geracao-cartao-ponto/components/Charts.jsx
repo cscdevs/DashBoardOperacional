@@ -29,6 +29,17 @@ export function corDeRotulo(rotulo) {
   for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return PALETA_CAT[h % PALETA_CAT.length];
 }
+
+/**
+ * Cor por SEVERIDADE de pendências: quanto maior o valor (mais pendências),
+ * pior — vai do verde (0) ao vermelho (máximo), passando pelo amarelo.
+ * `max` é o maior valor da série (referência para o gradiente).
+ */
+export function corPorPendencia(valor, max = 1) {
+  const r = Math.max(0, Math.min(1, (valor || 0) / (max || 1)));
+  const hue = 120 * (1 - r); // 120 = verde, 60 = amarelo, 0 = vermelho
+  return `hsl(${Math.round(hue)}, 75%, 45%)`;
+}
 const fmt = (n) => Number(n ?? 0).toLocaleString('pt-BR');
 const pct = (f) => `${Math.round((f ?? 0) * 100)}%`;
 const SemDados = () => <p style={{ color: 'var(--gray-400)', fontSize: '0.85rem', margin: 0 }}>Sem dados para os filtros atuais.</p>;
@@ -43,7 +54,7 @@ export function BarChart({ data = [], cor = 'var(--blue)', maxBarras = 12 }) {
   const max = Math.max(...linhas.map((d) => d.value), 1);
   if (linhas.length === 0) return <SemDados />;
   const corDa = (d, i) =>
-    typeof cor === 'function' ? cor(d, i) : Array.isArray(cor) ? cor[i % cor.length] : cor;
+    typeof cor === 'function' ? cor(d, i, max) : Array.isArray(cor) ? cor[i % cor.length] : cor;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
       {linhas.map((d, i) => (
@@ -106,17 +117,23 @@ export function DonutChart({ data = [], tamanho = 188, espessura = 24 }) {
   );
 }
 
-/** Colunas verticais (estilo Power BI). `data` = [{ label, value }]. */
+/**
+ * Colunas verticais (estilo Power BI). `data` = [{ label, value }].
+ * `cor` pode ser string (cor única), array (cor por índice) ou função
+ * `(d, i) => cor` — útil para 1 cor por categoria (ex.: por competência).
+ */
 export function ColumnChart({ data = [], cor = 'var(--blue)', altura = 220 }) {
   const max = Math.max(...data.map((d) => d.value), 1);
   if (data.length === 0) return <SemDados />;
+  const corDa = (d, i) =>
+    typeof cor === 'function' ? cor(d, i, max) : Array.isArray(cor) ? cor[i % cor.length] : cor;
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem', height: `${altura}px`, borderBottom: '2px solid var(--gray-200)', paddingBottom: '1px' }}>
         {data.map((d, i) => (
           <div key={d.label} title={`${d.label}: ${fmt(d.value)}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
             <span className="mono" style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--gray-900)', marginBottom: '4px' }}>{fmt(d.value)}</span>
-            <div style={{ width: '100%', maxWidth: '56px', height: `${(d.value / max) * 100}%`, minHeight: '3px', background: Array.isArray(cor) ? cor[i % cor.length] : cor, borderRadius: '6px 6px 0 0', transition: 'height 0.35s ease' }} />
+            <div style={{ width: '100%', maxWidth: '56px', height: `${(d.value / max) * 100}%`, minHeight: '3px', background: corDa(d, i), borderRadius: '6px 6px 0 0', transition: 'height 0.35s ease' }} />
           </div>
         ))}
       </div>
@@ -164,10 +181,13 @@ export function Gauge({ valor = 0, cor = 'var(--success)', tamanho = 220, espess
  * Tabela-resumo rolável com cabeçalho fixo e linha de Total (estilo matriz do BI).
  * `colunas` = [{ chave, titulo, alinhar, mono, formato, largura }]; `total` opcional.
  */
-export function TabelaResumo({ colunas = [], linhas = [], total, altura = 460 }) {
+export function TabelaResumo({ colunas = [], linhas = [], total, altura = 460, alturaFixa = false }) {
   if (!linhas || linhas.length === 0) return <SemDados />;
+  // alturaFixa: ocupa sempre `altura` px (em vez de só até o conteúdo), com a
+  // linha de Total grudada embaixo — útil para alinhar tabelas lado a lado.
+  const estiloAltura = alturaFixa ? { height: `${altura}px` } : { maxHeight: `${altura}px` };
   return (
-    <div className="sem-scrollbar" style={{ maxHeight: `${altura}px`, overflowY: 'auto', overflowX: 'auto' }}>
+    <div className="sem-scrollbar" style={{ ...estiloAltura, overflowY: 'auto', overflowX: 'auto' }}>
       <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
         <colgroup>
           {colunas.map((c) => <col key={c.chave} style={c.largura ? { width: c.largura } : undefined} />)}

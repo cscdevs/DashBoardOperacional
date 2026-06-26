@@ -3,7 +3,7 @@ import { Card } from '../../components/ui/Card';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { fetchGeracaoCartaoPonto } from './api';
-import { BarChart, DonutChart, ColumnChart, Gauge, TabelaResumo, corDeRotulo } from './components/Charts';
+import { BarChart, DonutChart, ColumnChart, Gauge, TabelaResumo, corPorPendencia } from './components/Charts';
 import {
   medidas, resumoPor, distribuicaoStatus, pendenciasPorCompetencia, competencias,
   valoresUnicos, exibir, formatarData, baixarCSV, ehDescartavel,
@@ -144,10 +144,11 @@ export const GeracaoCartaoPonto = () => {
     if (demitidosFiltro === 'ativos') l = l.filter((x) => !x.ehDemitido);
     if (demitidosFiltro === 'demitidos') l = l.filter((x) => x.ehDemitido);
     if (empresa) l = l.filter((x) => String(x.empresa ?? '') === empresa);
-    // Regra de negócio: cartões sem gerente no de-para ficam FORA do relatório
-    // inteiro (KPIs, gráficos e tabelas). Some que a planilha de gerentes for
-    // completada (ver areas-sem-gerente.csv), eles voltam a aparecer.
-    l = l.filter((x) => x.gerente);
+    // Regra de negócio: cartões sem gerente no de-para — e os do gerente
+    // "Processo Juridico" — ficam FORA do relatório inteiro (KPIs, gráficos e
+    // tabelas). Assim que a planilha de gerentes for completada (ver
+    // areas-sem-gerente.csv), os sem-gerente voltam a aparecer.
+    l = l.filter((x) => x.gerente && x.gerente !== 'Processo Juridico');
     return l;
   }, [registros, demitidosFiltro, empresa]);
 
@@ -172,12 +173,20 @@ export const GeracaoCartaoPonto = () => {
   const m = useMemo(() => medidas(linhas), [linhas]);
   const tendencia = useMemo(() => pendenciasPorCompetencia(baseSemCompetencia), [baseSemCompetencia]);
 
-  /* Colunas da matriz por Gerente (1ª coluna com a bolinha de cor estável). */
-  const colsGerente = colsResumo('Gerente').map((c, i) => (i !== 0 ? c : {
+  /* Resumos por gerente (memoizados) + maior pendência de cada lado, base da
+     escala de cor por severidade. */
+  const resumoGerComp = useMemo(() => resumoPor(linhas, (l) => l.gerente), [linhas]);
+  const resumoGerAno = useMemo(() => resumoPor(baseSemCompetencia, (l) => l.gerente), [baseSemCompetencia]);
+  const maxPendComp = useMemo(() => Math.max(...resumoGerComp.map((g) => g.pendencias), 1), [resumoGerComp]);
+  const maxPendAno = useMemo(() => Math.max(...resumoGerAno.map((g) => g.pendencias), 1), [resumoGerAno]);
+
+  /* Colunas da matriz por Gerente. A 1ª coluna mostra o nome com um "dot"
+     colorido por SEVERIDADE (mais pendências = mais vermelho). */
+  const colsGerente = (maxPend) => colsResumo('Gerente').map((c, i) => (i !== 0 ? c : {
     ...c,
-    formato: (v) => (
+    formato: (v, l) => (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', maxWidth: '100%' }}>
-        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: corDeRotulo(v), flexShrink: 0 }} />
+        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: corPorPendencia(l.pendencias, maxPend), flexShrink: 0 }} />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</span>
       </span>
     ),
@@ -382,20 +391,20 @@ export const GeracaoCartaoPonto = () => {
 
           <div className="grid-2-cols" style={{ alignItems: 'stretch' }}>
             <Card style={{ display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Pendências por Gerente</h3>
+              <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Pendências por Gerente (competência)</h3>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <BarChart
                   data={resumoPor(linhas, (l) => l.gerente, { ordenarPor: 'pendencias' })
                     .filter((g) => g.pendencias > 0)
                     .map((g) => ({ label: g.label, value: g.pendencias }))}
-                  cor={(d) => corDeRotulo(d.label)}
+                  cor={(d, i, max) => corPorPendencia(d.value, max)}
                 />
               </div>
             </Card>
             <Card style={{ display: 'flex', flexDirection: 'column' }}>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '1rem', fontSize: '1rem' }}>Pendências por Competência</h3>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <ColumnChart data={tendencia} cor="var(--danger)" />
+                <ColumnChart data={tendencia} cor={(d, i, max) => corPorPendencia(d.value, max)} />
               </div>
             </Card>
           </div>
@@ -404,8 +413,8 @@ export const GeracaoCartaoPonto = () => {
             <Card>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Pendências por Gerente — detalhe (competência)</h3>
               <TabelaResumo
-                colunas={colsGerente}
-                linhas={resumoPor(linhas, (l) => l.gerente)}
+                colunas={colsGerente(maxPendComp)}
+                linhas={resumoGerComp}
                 total={tot(linhas)}
                 altura={520}
               />
@@ -413,8 +422,8 @@ export const GeracaoCartaoPonto = () => {
             <Card>
               <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Pendências por Gerente — detalhe (ano todo)</h3>
               <TabelaResumo
-                colunas={colsGerente}
-                linhas={resumoPor(baseSemCompetencia, (l) => l.gerente)}
+                colunas={colsGerente(maxPendAno)}
+                linhas={resumoGerAno}
                 total={tot(baseSemCompetencia)}
                 altura={520}
               />
