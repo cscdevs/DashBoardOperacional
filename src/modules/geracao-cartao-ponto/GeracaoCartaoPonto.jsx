@@ -172,6 +172,17 @@ export const GeracaoCartaoPonto = () => {
   const m = useMemo(() => medidas(linhas), [linhas]);
   const tendencia = useMemo(() => pendenciasPorCompetencia(baseSemCompetencia), [baseSemCompetencia]);
 
+  /* Colunas da matriz por Gerente (1ª coluna com a bolinha de cor estável). */
+  const colsGerente = colsResumo('Gerente').map((c, i) => (i !== 0 ? c : {
+    ...c,
+    formato: (v) => (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', maxWidth: '100%' }}>
+        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: corDeRotulo(v), flexShrink: 0 }} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</span>
+      </span>
+    ),
+  }));
+
   const exportar = () => {
     const colunas = [
       ...COLS_DETALHE.map((c) => ({ titulo: c.titulo, valor: (l) => (c.fmt ? c.fmt(l[c.chave]) : l[c.chave]) })),
@@ -389,23 +400,26 @@ export const GeracaoCartaoPonto = () => {
             </Card>
           </div>
 
-          <Card>
-            <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Pendências por Gerente — detalhe</h3>
-            <TabelaResumo
-              colunas={colsResumo('Gerente').map((c, i) => (i !== 0 ? c : {
-                ...c,
-                formato: (v) => (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', maxWidth: '100%' }}>
-                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: corDeRotulo(v), flexShrink: 0 }} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</span>
-                  </span>
-                ),
-              }))}
-              linhas={resumoPor(linhas, (l) => l.gerente)}
-              total={tot(linhas)}
-              altura={520}
-            />
-          </Card>
+          <div className="grid-2-cols" style={{ alignItems: 'start' }}>
+            <Card>
+              <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Pendências por Gerente — detalhe (competência)</h3>
+              <TabelaResumo
+                colunas={colsGerente}
+                linhas={resumoPor(linhas, (l) => l.gerente)}
+                total={tot(linhas)}
+                altura={520}
+              />
+            </Card>
+            <Card>
+              <h3 style={{ color: 'var(--gray-900)', marginTop: 0, marginBottom: '0.75rem', fontSize: '1rem' }}>Pendências por Gerente — detalhe (ano todo)</h3>
+              <TabelaResumo
+                colunas={colsGerente}
+                linhas={resumoPor(baseSemCompetencia, (l) => l.gerente)}
+                total={tot(baseSemCompetencia)}
+                altura={520}
+              />
+            </Card>
+          </div>
         </>
       ) : (
         /* Detalhado */
