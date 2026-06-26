@@ -280,7 +280,7 @@ function ClusterLayer({ rotas, coresPorSupervisor }) {
 }
 
 // Base operacional — marcada SEMPRE no mapa, independente de filtros/camadas.
-const BASE = {
+export const BASE = {
   nome: 'Base',
   endereco: 'Rua Conselheiro Ribas, 297 — Vila Anastácio, São Paulo/SP',
   coordinates: [-23.5157274, -46.7190399],
@@ -315,6 +315,41 @@ function BaseLayer() {
   return null;
 }
 
+// Ponto de apoio do supervisor: losango na cor do supervisor (forma diferente
+// dos locais/carros, sem revelar que é endereço residencial).
+const iconePontoApoio = (cor) =>
+  L.divIcon({
+    className: 'custom-leaflet-marker',
+    html: `<div style="width:15px;height:15px;background:${cor};
+        border:2px solid #fff;transform:rotate(45deg);
+        box-shadow:0 0 0 1.5px rgba(0,0,0,.55)"></div>`,
+    iconSize: [15, 15],
+    iconAnchor: [7, 7],
+    popupAnchor: [0, -8],
+  });
+
+/** Camada dos pontos de apoio dos supervisores (rótulo neutro). */
+function PontosApoioLayer({ pontos, coresPorSupervisor }) {
+  const map = useMap();
+  useEffect(() => {
+    const group = L.layerGroup();
+    pontos.forEach((p) => {
+      if (!p.coordinates) return;
+      const cor = corDoSupervisor(p.nome, coresPorSupervisor);
+      const m = L.marker(p.coordinates, { icon: iconePontoApoio(cor), zIndexOffset: 600 });
+      m.bindTooltip(`Ponto de apoio — ${esc(tituloCase(p.nome))}`, { direction: 'top', offset: [0, -8] });
+      m.bindPopup(
+        `<strong style="color:#1B0DAE">${esc(tituloCase(p.nome))}</strong>
+         <div style="font-size:12px;color:#6B7588;margin-top:3px">Ponto de apoio${p.placa ? ` · ${esc(p.placa)}` : ''}</div>`
+      );
+      group.addLayer(m);
+    });
+    map.addLayer(group);
+    return () => map.removeLayer(group);
+  }, [map, pontos, coresPorSupervisor]);
+  return null;
+}
+
 export const RotasMap = ({
   rotas = [],
   coresPorSupervisor = {},
@@ -323,6 +358,7 @@ export const RotasMap = ({
   trajeto = null,
   onSelecionarVeiculo = null,
   mostrarLocais = true,
+  pontosApoio = [],
 }) => {
   const comCoord = rotas.filter((r) => r.coordinates);
   const veiculosComCoord = veiculos.filter((v) => v.coordinates);
@@ -354,6 +390,9 @@ export const RotasMap = ({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <BaseLayer />
+          {pontosApoio.length > 0 && (
+            <PontosApoioLayer pontos={pontosApoio} coresPorSupervisor={coresPorSupervisor} />
+          )}
           {mostrarLocais && <ClusterLayer rotas={comCoord} coresPorSupervisor={coresPorSupervisor} />}
           {trajeto?.pontos?.length > 1 && (
             <TrailLayer pontos={trajeto.pontos} cor={corTrajeto} paradas={trajeto.paradas || []} />

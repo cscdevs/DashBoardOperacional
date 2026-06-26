@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { RotasMap } from './components/RotasMap';
-import { fetchRotasSupervisao, fetchPosicoesVeiculos, fetchTrajetoVeiculo } from './api';
+import { RotasMap, BASE } from './components/RotasMap';
+import { fetchRotasSupervisao, fetchPosicoesVeiculos, fetchTrajetoVeiculo, fetchPontosApoio } from './api';
 import { mapaDeCores, corDoSupervisor } from './utils/cores';
 import { tituloCase } from '../../utils/texto';
 import { ehLocalEspecial } from '../../utils/locais';
@@ -19,6 +19,7 @@ import {
   Palette,
   Check,
   Car,
+  Star,
 } from 'lucide-react';
 
 const KpiCard = ({ titulo, valor, subtitulo, icone: Icone, cor = 'var(--blue)', fundo = 'var(--blue-50)' }) => (
@@ -83,10 +84,27 @@ function baixarCSV(linhas) {
 const valoresUnicos = (rotas, chave) =>
   [...new Set(rotas.map((r) => r[chave]).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
+/** Raio (km) que conta como "perto da base". */
+const RAIO_BASE_KM = 1;
+
+/** Distância em km entre dois pontos [lat, lng] (Haversine). */
+function distanciaKm([lat1, lon1], [lat2, lon2]) {
+  const R = 6371;
+  const rad = (g) => (g * Math.PI) / 180;
+  const dLat = rad(lat2 - lat1);
+  const dLon = rad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export const RotasSupervisao = () => {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
   const [rotas, setRotas] = useState([]);
+
+  // Pontos de apoio dos supervisores (camada discreta no mapa).
+  const [pontosApoio, setPontosApoio] = useState([]);
+  const [mostrarPontos, setMostrarPontos] = useState(true);
 
   // Filtros
   const [busca, setBusca] = useState('');
@@ -171,13 +189,19 @@ export const RotasSupervisao = () => {
     };
   }, []);
 
+  // Pontos de apoio (estático; carrega 1x).
+  useEffect(() => {
+    fetchPontosApoio()
+      .then((d) => setPontosApoio(d.pontos || []))
+      .catch(() => {});
+  }, []);
+
   // A camada de carros fica ativa se ligada explicitamente OU no modo "só carros".
   const carrosAtivos = mostrarVeiculos || apenasCarros;
 
-  // Posição ao vivo dos veículos: busca quando a camada está ativa e re-busca a
-  // cada 60s. O backend tem cache curto próprio (~45s).
+  // Posição ao vivo dos veículos: SEMPRE busca (alimenta o card "perto da base"
+  // e a camada do mapa) e re-busca a cada 60s. Backend tem cache curto (~45s).
   useEffect(() => {
-    if (!carrosAtivos) return;
     let ativo = true;
     const carregar = () => {
       fetchPosicoesVeiculos()
@@ -195,7 +219,7 @@ export const RotasSupervisao = () => {
       ativo = false;
       clearInterval(id);
     };
-  }, [carrosAtivos]);
+  }, []);
 
   // Carrega o rastro (trajeto 24h) sempre que houver uma viatura selecionada.
   // A limpeza do rastro é feita nos handlers (não no effect), p/ evitar
@@ -300,6 +324,18 @@ export const RotasSupervisao = () => {
     return soSupervisao ? veiculos.filter((v) => v.emUso) : veiculos;
   }, [carrosAtivos, soSupervisao, veiculos]);
 
+  // Viaturas de supervisão (em uso) dentro do raio da base, ordenadas por
+  // distância — alimenta o card "Perto da Base".
+  const viaturasPertoBase = useMemo(
+    () =>
+      veiculos
+        .filter((v) => v.coordinates && v.emUso)
+        .map((v) => ({ ...v, distanciaKm: distanciaKm(BASE.coordinates, v.coordinates) }))
+        .filter((v) => v.distanciaKm <= RAIO_BASE_KM)
+        .sort((a, b) => a.distanciaKm - b.distanciaKm),
+    [veiculos]
+  );
+
   const limparFiltros = () => {
     setBusca('');
     setFEmpresa('');
@@ -376,6 +412,10 @@ export const RotasSupervisao = () => {
             <option value="">Todos os clientes</option>
             {opcoes.clientes.map((v) => <option key={v} value={v}>{tituloCase(v)}</option>)}
           </select>
+          <select style={selectStyle} value={fSupervisor} onChange={(e) => setFSupervisor(e.target.value)}>
+            <option value="">Todos os supervisores</option>
+            {supervisoresVisiveis.map((v) => <option key={v} value={v}>{tituloCase(v)}</option>)}
+          </select>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--gray-700)', cursor: 'pointer', userSelect: 'none' }}>
             <input
               type="checkbox"
@@ -410,6 +450,14 @@ export const RotasSupervisao = () => {
           >
             {apenasCarros ? <MapPin size={16} /> : <Car size={16} />}
             {apenasCarros ? 'Ver endereços' : 'Só os carros'}
+          </Button>
+          <Button
+            variant={mostrarPontos ? 'primary' : 'secondary'}
+            onClick={() => setMostrarPontos((v) => !v)}
+            disabled={pontosApoio.length === 0}
+            title="Mostra os pontos de apoio dos supervisores no mapa"
+          >
+            <Star size={16} /> Pontos de apoio{pontosApoio.length > 0 ? ` (${pontosApoio.length})` : ''}
           </Button>
           <Button variant="secondary" onClick={limparFiltros}>Limpar</Button>
         </div>
@@ -456,6 +504,7 @@ export const RotasSupervisao = () => {
         <KpiCard titulo="Clientes" valor={kpis.clientes} icone={Building2} cor="var(--success)" fundo="var(--success-bg)" />
         <KpiCard titulo="Supervisores" valor={kpis.supervisores} icone={UserCheck} cor="var(--warning)" fundo="var(--warning-bg)" />
         <KpiCard titulo="Cidades" valor={kpis.cidades} icone={Users} />
+        <KpiCard titulo={`Perto da Base (${RAIO_BASE_KM} km)`} valor={viaturasPertoBase.length} icone={Car} cor="var(--blue)" fundo="var(--blue-50)" />
       </div>
 
       {/* Mapa */}
@@ -467,6 +516,7 @@ export const RotasSupervisao = () => {
         trajeto={trajeto}
         onSelecionarVeiculo={aoSelecionarVeiculo}
         mostrarLocais={!apenasCarros}
+        pontosApoio={mostrarPontos ? pontosApoio : []}
       />
 
       {/* Legenda clicável — popover via portal (sempre acima do mapa) */}

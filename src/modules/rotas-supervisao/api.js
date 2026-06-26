@@ -18,3 +18,8 @@ export function fetchPosicoesVeiculos() {
 export function fetchTrajetoVeiculo(placa, horas = 24) {
   return getJSON(`/api/rotas-supervisao/trajeto?placa=${encodeURIComponent(placa)}&horas=${horas}`);
 }
+
+/** Pontos de apoio dos supervisores (dado interno: nome/placa/coordenada). */
+export function fetchPontosApoio() {
+  return getJSON('/api/rotas-supervisao/pontos-apoio');
+}

@@ -6,6 +6,7 @@ import 'dotenv/config';
 import { buscarRotas } from './reports/rotas-supervisao/rotas-supervisao.js';
 import { buscarRotasDaNuvem } from './reports/rotas-supervisao/rotas-supervisao-nuvem.js';
 import { buscarPosicoesVeiculos, buscarTrajetoVeiculo } from './reports/rotas-supervisao/stc.js';
+import { carregarPontosSupervisores } from './shared/pontos-supervisores.js';
 import { buscarFluxoAtestadosFaltas } from './reports/fluxo-atestados-faltas/fluxo-atestados-faltas.js';
 import { buscarGeracaoCartaoPonto } from './reports/geracao-cartao-ponto/geracao-cartao-ponto.js';
 import { comCache, forcarAtualizacao, aquecer, infoCache } from './cache.js';
@@ -67,6 +68,16 @@ app.get('/api/rotas-supervisao/posicoes', async (req, res) => {
       erro: 'Falha ao consultar o rastreamento de veículos.',
       detalhe: err.message,
     });
+  }
+});
+
+// ---- Rotas de Supervisão: pontos de apoio dos supervisores (dado interno) ----
+// Expõe apenas nome/placa/coordenada (sem endereço/CPF). Ver shared/pontos-supervisores.js.
+app.get('/api/rotas-supervisao/pontos-apoio', (req, res) => {
+  try {
+    res.json({ pontos: carregarPontosSupervisores() });
+  } catch (err) {
+    res.status(500).json({ erro: 'Falha ao carregar pontos de apoio.', detalhe: err.message });
   }
 });
 
