@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { loginAPI, logoutAPI, fetchMeAPI } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -10,46 +11,58 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check local storage on mount
+  // Verifica o token no localStorage e valida com o backend ao carregar
   useEffect(() => {
-    const storedUser = localStorage.getItem('dashboard_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        localStorage.removeItem('dashboard_user');
+    const inicializarAuth = async () => {
+      const storedUser = localStorage.getItem('dashboard_user');
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          if (parsed && parsed.token) {
+            // Valida o token chamando /api/auth/me
+            const data = await fetchMeAPI();
+            // Mantém o token no estado local
+            setUser({ ...data.user, token: parsed.token });
+          } else {
+            localStorage.removeItem('dashboard_user');
+          }
+        } catch (e) {
+          console.warn('[auth] Falha ao validar token salvo. Efetuando logout local.');
+          localStorage.removeItem('dashboard_user');
+          setUser(null);
+        }
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    inicializarAuth();
   }, []);
 
   const login = async (email, password) => {
-    // Simulated API call
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        let userData = null;
-        if (email === 'csc.devapoio@gmail.com' && password === 'SPTK.0509.EVE') {
-          userData = { email, role: 'admin', name: 'Administrador' };
-        } else if (email === 'diretoria@csc.com.br' && password === 'Diretoria@2026') {
-          userData = { email, role: 'diretoria', name: 'Diretoria' };
-        } else if (email === 'gerencia@csc.com.br' && password === 'Gerencia@2026') {
-          userData = { email, role: 'gerencia', name: 'Gerência' };
-        }
-
-        if (userData) {
-          setUser(userData);
-          localStorage.setItem('dashboard_user', JSON.stringify(userData));
-          resolve(true);
-        } else {
-          reject(new Error('Credenciais inválidas'));
-        }
-      }, 800);
-    });
+    try {
+      const data = await loginAPI(email, password);
+      if (data && data.token && data.user) {
+        const userData = { ...data.user, token: data.token };
+        setUser(userData);
+        localStorage.setItem('dashboard_user', JSON.stringify(userData));
+        return true;
+      } else {
+        throw new Error('Resposta de login inválida do servidor.');
+      }
+    } catch (err) {
+      throw new Error(err.message || 'Credenciais inválidas');
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('dashboard_user');
+  const logout = async () => {
+    try {
+      await logoutAPI();
+    } catch (err) {
+      console.warn('[auth] Erro ao chamar logout no servidor:', err.message);
+    } finally {
+      setUser(null);
+      localStorage.removeItem('dashboard_user');
+    }
   };
 
   const value = {

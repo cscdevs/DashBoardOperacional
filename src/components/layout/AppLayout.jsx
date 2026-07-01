@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, LayoutGrid, Settings, Route as RouteIcon, FileText, CalendarClock, ShieldAlert, Moon, Sun, Menu, LogOut, X, Monitor, Minimize } from 'lucide-react';
+import { LayoutDashboard, LayoutGrid, Settings, Route as RouteIcon, FileText, CalendarClock, ShieldAlert, Moon, Sun, Menu, LogOut, X, Monitor, Minimize, Users } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { SpotlightSearch } from './SpotlightSearch';
@@ -186,37 +186,64 @@ export const AppLayout = () => {
             Relatórios
           </p>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <li>
-              <NavLink to="/relatorios/rotas-supervisao" onClick={closeSidebar} style={navLinkStyle}>
-                <RouteIcon size={20} />
-                Rotas de Supervisão
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/relatorios/fluxo-atestados-faltas" onClick={closeSidebar} style={navLinkStyle}>
-                <FileText size={20} />
-                Fluxo de Atestados / Faltas
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/relatorios/geracao-cartao-ponto" onClick={closeSidebar} style={navLinkStyle}>
-                <CalendarClock size={20} />
-                Geração de Cartão de Ponto
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/relatorios/posto-descoberto" onClick={closeSidebar} style={navLinkStyle}>
-                <ShieldAlert size={20} />
-                Posto Descoberto
-              </NavLink>
-            </li>
-            <li>
-              <NavLink to="/relatorios/quadro-operacional" onClick={closeSidebar} style={navLinkStyle}>
-                <LayoutGrid size={20} />
-                Quadro Operacional
-              </NavLink>
-            </li>
+            {(user?.role === 'admin' || user?.allowedReports?.includes('rotas-supervisao')) && (
+              <li>
+                <NavLink to="/relatorios/rotas-supervisao" onClick={closeSidebar} style={navLinkStyle}>
+                  <RouteIcon size={20} />
+                  Rotas de Supervisão
+                </NavLink>
+              </li>
+            )}
+            {(user?.role === 'admin' || user?.allowedReports?.includes('fluxo-atestados-faltas')) && (
+              <li>
+                <NavLink to="/relatorios/fluxo-atestados-faltas" onClick={closeSidebar} style={navLinkStyle}>
+                  <FileText size={20} />
+                  Fluxo de Atestados / Faltas
+                </NavLink>
+              </li>
+            )}
+            {(user?.role === 'admin' || user?.allowedReports?.includes('geracao-cartao-ponto')) && (
+              <li>
+                <NavLink to="/relatorios/geracao-cartao-ponto" onClick={closeSidebar} style={navLinkStyle}>
+                  <CalendarClock size={20} />
+                  Geração de Cartão de Ponto
+                </NavLink>
+              </li>
+            )}
+            {(user?.role === 'admin' || user?.allowedReports?.includes('posto-descoberto')) && (
+              <li>
+                <NavLink to="/relatorios/posto-descoberto" onClick={closeSidebar} style={navLinkStyle}>
+                  <ShieldAlert size={20} />
+                  Posto Descoberto
+                </NavLink>
+              </li>
+            )}
+            {(user?.role === 'admin' || user?.allowedReports?.includes('quadro-operacional')) && (
+              <li>
+                <NavLink to="/relatorios/quadro-operacional" onClick={closeSidebar} style={navLinkStyle}>
+                  <LayoutGrid size={20} />
+                  Quadro Operacional
+                </NavLink>
+              </li>
+            )}
           </ul>
+
+          {/* Grupo: Administração (Apenas Admin) */}
+          {user?.role === 'admin' && (
+            <>
+              <p style={{ margin: '1.5rem 0 0.5rem', padding: '0 1rem', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--gray-400)', textTransform: 'uppercase' }}>
+                Administração
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <li>
+                  <NavLink to="/usuarios" onClick={closeSidebar} style={navLinkStyle}>
+                    <Users size={20} />
+                    Gestão de Usuários
+                  </NavLink>
+                </li>
+              </ul>
+            </>
+          )}
         </nav>
 
         <div style={{ padding: '1rem', borderTop: '1px solid var(--gray-200)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

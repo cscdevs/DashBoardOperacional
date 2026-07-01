@@ -6,8 +6,33 @@
 
 const BASE_URL = import.meta.env.VITE_API_URL || '';
 
-export async function getJSON(path) {
-  const resp = await fetch(`${BASE_URL}${path}`);
+/**
+ * Retorna os cabeçalhos padrão incluindo o token de autenticação se ele existir
+ */
+function obterHeaders() {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  const storedUser = localStorage.getItem('dashboard_user');
+  if (storedUser) {
+    try {
+      const parsed = JSON.parse(storedUser);
+      if (parsed && parsed.token) {
+        headers['Authorization'] = `Bearer ${parsed.token}`;
+      }
+    } catch (e) {
+      // Ignora erro de parsing
+    }
+  }
+
+  return headers;
+}
+
+/**
+ * Trata a resposta HTTP e lança erro caso não seja bem sucedida
+ */
+async function tratarResposta(resp, path) {
   if (!resp.ok) {
     let detalhe = '';
     try {
@@ -21,6 +46,52 @@ export async function getJSON(path) {
   return resp.json();
 }
 
+/**
+ * GET Request
+ */
+export async function getJSON(path) {
+  const resp = await fetch(`${BASE_URL}${path}`, {
+    method: 'GET',
+    headers: obterHeaders(),
+  });
+  return tratarResposta(resp, path);
+}
+
+/**
+ * POST Request
+ */
+export async function postJSON(path, body) {
+  const resp = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    headers: obterHeaders(),
+    body: JSON.stringify(body),
+  });
+  return tratarResposta(resp, path);
+}
+
+/**
+ * PUT Request
+ */
+export async function putJSON(path, body) {
+  const resp = await fetch(`${BASE_URL}${path}`, {
+    method: 'PUT',
+    headers: obterHeaders(),
+    body: JSON.stringify(body),
+  });
+  return tratarResposta(resp, path);
+}
+
+/**
+ * DELETE Request
+ */
+export async function deleteJSON(path) {
+  const resp = await fetch(`${BASE_URL}${path}`, {
+    method: 'DELETE',
+    headers: obterHeaders(),
+  });
+  return tratarResposta(resp, path);
+}
+
 export function fetchHealth() {
   return getJSON('/api/health');
 }
@@ -30,7 +101,58 @@ export function fetchHealth() {
  * banco para que a próxima leitura traga os dados frescos imediatamente.
  */
 export async function limparCache() {
-  const resp = await fetch(`${BASE_URL}/api/cache/limpar`, { method: 'POST' });
-  if (!resp.ok) throw new Error(`Erro ${resp.status} ao limpar o cache`);
-  return resp.json();
+  return postJSON('/api/cache/limpar');
+}
+
+/* ==========================================================================
+   APIs de Autenticação e Gestão de Usuários
+   ========================================================================== */
+
+/**
+ * Realiza o login no backend
+ */
+export function loginAPI(email, password) {
+  return postJSON('/api/auth/login', { email, password });
+}
+
+/**
+ * Realiza o logout no backend
+ */
+export function logoutAPI() {
+  return postJSON('/api/auth/logout');
+}
+
+/**
+ * Obtém os dados do usuário logado no backend
+ */
+export function fetchMeAPI() {
+  return getJSON('/api/auth/me');
+}
+
+/**
+ * Lista todos os usuários cadastrados (Admin only)
+ */
+export function fetchUsersAPI() {
+  return getJSON('/api/users');
+}
+
+/**
+ * Cria um novo usuário (Admin only)
+ */
+export function createUserAPI(userData) {
+  return postJSON('/api/users', userData);
+}
+
+/**
+ * Atualiza um usuário existente (Admin only)
+ */
+export function updateUserAPI(id, userData) {
+  return putJSON(`/api/users/${id}`, userData);
+}
+
+/**
+ * Exclui um usuário (Admin only)
+ */
+export function deleteUserAPI(id) {
+  return deleteJSON(`/api/users/${id}`);
 }

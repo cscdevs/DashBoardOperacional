@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Route as RouteIcon, FileText, CalendarClock, LayoutDashboard, ArrowRight } from 'lucide-react';
+import { Search, Route as RouteIcon, FileText, CalendarClock, ShieldAlert, LayoutGrid, LayoutDashboard, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const LINKS = [
   { id: 'dashboard', path: '/', label: 'Dashboard Inicial', icone: LayoutDashboard },
-  { id: 'rotas', path: '/relatorios/rotas-supervisao', label: 'Rotas de Supervisão', icone: RouteIcon },
-  { id: 'atestados', path: '/relatorios/fluxo-atestados-faltas', label: 'Fluxo de Atestados e Faltas', icone: FileText },
-  { id: 'cartao', path: '/relatorios/geracao-cartao-ponto', label: 'Geração de Cartão de Ponto', icone: CalendarClock },
+  { id: 'rotas-supervisao', path: '/relatorios/rotas-supervisao', label: 'Rotas de Supervisão', icone: RouteIcon },
+  { id: 'fluxo-atestados-faltas', path: '/relatorios/fluxo-atestados-faltas', label: 'Fluxo de Atestados e Faltas', icone: FileText },
+  { id: 'geracao-cartao-ponto', path: '/relatorios/geracao-cartao-ponto', label: 'Geração de Cartão de Ponto', icone: CalendarClock },
+  { id: 'posto-descoberto', path: '/relatorios/posto-descoberto', label: 'Posto Descoberto', icone: ShieldAlert },
+  { id: 'quadro-operacional', path: '/relatorios/quadro-operacional', label: 'Quadro Operacional', icone: LayoutGrid },
 ];
 
 export const SpotlightSearch = ({ isDesktopOnly = false }) => {
@@ -15,6 +18,7 @@ export const SpotlightSearch = ({ isDesktopOnly = false }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -38,7 +42,10 @@ export const SpotlightSearch = ({ isDesktopOnly = false }) => {
     }
   }, [isOpen]);
 
-  const filteredLinks = LINKS.filter(link => 
+  const filteredLinks = LINKS.filter(link => {
+    if (link.id === 'dashboard') return true;
+    return user?.role === 'admin' || (Array.isArray(user?.allowedReports) && user.allowedReports.includes(link.id));
+  }).filter(link => 
     link.label.toLowerCase().includes(query.toLowerCase())
   );
 

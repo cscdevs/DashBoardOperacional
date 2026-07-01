@@ -1,0 +1,44 @@
+[
+  {
+    "id": "1",
+    "name": "Administrador",
+    "email": "csc.devapoio@gmail.com",
+    "password": "80713a9c773df6efb344b6bf2a4a3020:a8c4c9ba58317dec5008bc96069d398e8b946d970fe8d0c4efa0309397a3c8756e1f56defaedb760dade29577407a2b2ac6f0dc33f53a64698a719989fa0281c",
+    "role": "admin",
+    "allowedReports": [
+      "rotas-supervisao",
+      "fluxo-atestados-faltas",
+      "geracao-cartao-ponto",
+      "posto-descoberto",
+      "quadro-operacional"
+    ]
+  },
+  {
+    "id": "2",
+    "name": "Diretoria",
+    "email": "diretoria@csc.com.br",
+    "password": "3e7c19fb2d3ba8dad8a136f51e220d1e:9b0d1bcafe8db4a91d92a53ab3d0fc5f9b2525789ab17d34a831c5b12265e33deb5021916eb12fef4a17fefbd82a5b3b32096c8e4fb741c1709c4718a528fcbb",
+    "role": "user",
+    "allowedReports": [
+      "rotas-supervisao",
+      "fluxo-atestados-faltas",
+      "geracao-cartao-ponto",
+      "posto-descoberto",
+      "quadro-operacional"
+    ]
+  },
+  {
+    "id": "3",
+    "name": "Gerência",
+    "email": "gerencia@csc.com.br",
+    "password": "815edff10e593a76f1061374b72c0222:fd70d1b19023fd999f79777626d0708f2fbd9bfd382d78831138765e7a6bccb9e5aa45ffccaa0c2ab11e048af38e9cf7d7fab0c9b578fdedc7dbd2c02deee24b",
+    "role": "user",
+    "allowedReports": [
+      "rotas-supervisao",
+      "fluxo-atestados-faltas",
+      "geracao-cartao-ponto",
+      "posto-descoberto",
+      "quadro-operacional"
+    ]
+  }
+]

@@ -2,10 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Route as RouteIcon, FileText, CalendarClock, ShieldAlert, LayoutGrid, ArrowRight } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 /** Catálogo de relatórios disponíveis na plataforma. */
 const RELATORIOS = [
   {
+    key: 'rotas-supervisao',
     titulo: 'Rotas de Supervisão',
     descricao:
       'Locais de serviço ativos por empresa, base operacional e supervisor, com mapa, filtros e exportação.',
@@ -14,6 +16,7 @@ const RELATORIOS = [
     disponivel: true,
   },
   {
+    key: 'fluxo-atestados-faltas',
     titulo: 'Fluxo de Atestados / Faltas',
     descricao:
       'Atestados, faltas por cliente e faltas disciplinares por período, com KPIs, gráficos, flag de demitidos e exportação.',
@@ -22,6 +25,7 @@ const RELATORIOS = [
     disponivel: true,
   },
   {
+    key: 'geracao-cartao-ponto',
     titulo: 'Geração de Cartão de Ponto',
     descricao:
       'Geração e retorno dos cartões de ponto por competência — entregues × pendências, com visão geral, detalhamento e por supervisão.',
@@ -30,6 +34,7 @@ const RELATORIOS = [
     disponivel: true,
   },
   {
+    key: 'posto-descoberto',
     titulo: 'Posto Descoberto — Produtividade',
     descricao:
       'Postos não cobertos por dia, por motivo (Cliente → Local → Posto), com filtros de turno, situação e período.',
@@ -38,6 +43,7 @@ const RELATORIOS = [
     disponivel: true,
   },
   {
+    key: 'quadro-operacional',
     titulo: 'Quadro Operacional',
     descricao:
       'Contrato × Operacional × PV, Reserva, Excedente, Treinamento e Dobra — matrizes por cliente/empresa e gerente.',
@@ -48,6 +54,13 @@ const RELATORIOS = [
 ];
 
 export const Dashboard = () => {
+  const { user } = useAuth();
+
+  // Filtra os relatórios exibidos na página inicial com base nas permissões do usuário logado
+  const relatoriosPermitidos = RELATORIOS.filter((r) => {
+    return user?.role === 'admin' || (Array.isArray(user?.allowedReports) && user.allowedReports.includes(r.key));
+  });
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       <div>
@@ -58,7 +71,7 @@ export const Dashboard = () => {
       </div>
 
       <div className="kanban-grid">
-        {RELATORIOS.map((r, index) => {
+        {relatoriosPermitidos.map((r, index) => {
           const Icone = r.icone;
           const conteudo = (
             <Card className="stagger-item" style={{ '--delay': `${index * 0.15}s`, height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', cursor: r.disponivel ? 'pointer' : 'default', opacity: r.disponivel ? 1 : 0.6 }}>
@@ -81,6 +94,11 @@ export const Dashboard = () => {
             <div key={r.titulo} style={{ height: '100%' }}>{conteudo}</div>
           );
         })}
+        {relatoriosPermitidos.length === 0 && (
+          <div style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center', color: 'var(--gray-500)', backgroundColor: 'var(--glass-bg)', backdropFilter: 'blur(16px)', borderRadius: '8px', border: '1px solid var(--gray-200)' }}>
+            Nenhum relatório atribuído à sua conta. Entre em contato com o administrador.
+          </div>
+        )}
       </div>
     </div>
   );
