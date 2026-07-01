@@ -294,7 +294,7 @@ export const Usuarios = () => {
           <div style={{ width: '40px', height: '40px', border: '4px solid var(--gray-200)', borderTop: '4px solid var(--blue)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
         </div>
       ) : (
-        <div className="kanban-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
+        <div className="kanban-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
           {users.map((u, idx) => (
             <Card
               key={u.id}
@@ -361,13 +361,13 @@ export const Usuarios = () => {
 
               {/* Ações */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', borderTop: '1px solid var(--gray-200)', paddingTop: '1rem', marginTop: 'auto', flexWrap: 'wrap' }}>
-                <Button variant="secondary" onClick={() => handleOpenResetModal(u)} title="Redefinir senha para csc123" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
+                <Button variant="secondary" onClick={() => handleOpenResetModal(u)} title="Redefinir senha para csc123" style={{ flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
                   <RotateCcw size={14} /> Redefinir senha
                 </Button>
-                <Button variant="secondary" onClick={() => handleOpenEditModal(u)} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
+                <Button variant="secondary" onClick={() => handleOpenEditModal(u)} style={{ flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
                   <Edit2 size={14} /> Editar
                 </Button>
-                <Button variant="danger" onClick={() => handleOpenDeleteModal(u)} disabled={currentUser?.id === u.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.85rem', opacity: currentUser?.id === u.id ? 0.4 : 1, cursor: currentUser?.id === u.id ? 'not-allowed' : 'pointer' }} title={currentUser?.id === u.id ? 'Não é possível excluir seu próprio login ativo' : 'Excluir usuário'}>
+                <Button variant="danger" onClick={() => handleOpenDeleteModal(u)} disabled={currentUser?.id === u.id} style={{ flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.85rem', opacity: currentUser?.id === u.id ? 0.4 : 1, cursor: currentUser?.id === u.id ? 'not-allowed' : 'pointer' }} title={currentUser?.id === u.id ? 'Não é possível excluir seu próprio login ativo' : 'Excluir usuário'}>
                   <Trash2 size={14} /> Excluir
                 </Button>
               </div>
@@ -508,8 +508,8 @@ export const Usuarios = () => {
           {perfis.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {perfis.map((p) => (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid var(--gray-200)', backgroundColor: 'var(--gray-50)' }}>
-                  <div style={{ minWidth: 0 }}>
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid var(--gray-200)', backgroundColor: 'var(--gray-50)', flexWrap: 'wrap' }}>
+                  <div style={{ minWidth: 0, flex: '1 1 160px' }}>
                     <p style={{ margin: 0, fontWeight: 600, color: 'var(--gray-900)', fontSize: '0.9rem' }}>{p.name}</p>
                     <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--gray-500)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {p.allowedReports.map((rk) => DISPONIVEIS_RELATORIOS.find((r) => r.key === rk)?.label || rk).join(', ')}

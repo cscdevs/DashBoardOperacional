@@ -120,6 +120,7 @@ Login por **sessão** (token Bearer) com senhas guardadas em **hash PBKDF2** —
 - **Glassmorphism**: Efeitos de vidro fosco em menus e barras laterais.
 - **Animações em Cascata**: Entrada fluída de cartões (Staggered Animations).
 - **Temas**: Suporte nativo e persistente para Claro / Escuro (Dark Mode automático no mapa e nas sombras volumétricas).
+- **Responsivo**: Layout adaptado a mobile — sidebar deslizante, modais em tela cheia (bottom-sheet) e grids/ações que se reorganizam em telas estreitas.
 
 ---
 
