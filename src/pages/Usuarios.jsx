@@ -388,16 +388,16 @@ export const Usuarios = () => {
           {/* E-mail */}
           <div>
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--gray-700)', marginBottom: '0.5rem' }}>
-              E-mail corporativo (Login)
+              Usuário ou E-mail (Login)
             </label>
             <div style={{ position: 'relative' }}>
               <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }} />
               <input
-                type="email"
+                type="text"
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="Ex: joao.silva@csc.com.br"
+                placeholder="Ex: joao.silva ou joao.silva@csc.com.br"
                 style={inputStyle}
               />
             </div>
