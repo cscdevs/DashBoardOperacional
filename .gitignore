@@ -32,6 +32,8 @@ dist-ssr
 *.sw?
 
 # Dados sensíveis / pessoais (NUNCA versionar)
+server/data/users.json
+server/data/perfis.json
 SUPERVISAO  carro.xlsx
 areas-sem-gerente.csv
 server/src/find_missing.js

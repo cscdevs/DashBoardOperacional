@@ -6,6 +6,10 @@ import path from 'node:path';
 const DATA_DIR = path.join(process.cwd(), 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
+// Senha padrão/primária de todo novo usuário (e para onde o admin "redefine").
+// Configurável via .env; se ausente, usa 'csc123'.
+export const SENHA_PADRAO = process.env.SENHA_PADRAO || 'csc123';
+
 // Garante que o diretório 'data' existe
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -77,6 +81,7 @@ function inicializarUsuariosPadrao() {
       email: 'csc.devapoio@gmail.com',
       password: gerarHashSenha('SPTK.0509.EVE'),
       role: 'admin',
+      mustChangePassword: false,
       allowedReports: [
         'rotas-supervisao',
         'fluxo-atestados-faltas',
@@ -91,6 +96,7 @@ function inicializarUsuariosPadrao() {
       email: 'diretoria@csc.com.br',
       password: gerarHashSenha('Diretoria@2026'),
       role: 'user',
+      mustChangePassword: false,
       allowedReports: [
         'rotas-supervisao',
         'fluxo-atestados-faltas',
@@ -105,6 +111,7 @@ function inicializarUsuariosPadrao() {
       email: 'gerencia@csc.com.br',
       password: gerarHashSenha('Gerencia@2026'),
       role: 'user',
+      mustChangePassword: false,
       allowedReports: [
         'rotas-supervisao',
         'fluxo-atestados-faltas',

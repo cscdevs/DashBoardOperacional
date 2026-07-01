@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginAPI, logoutAPI, fetchMeAPI } from '../services/api';
+import { loginAPI, logoutAPI, fetchMeAPI, trocarSenhaAPI } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -54,6 +54,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Troca a senha do usuário logado e atualiza o estado local (some a exigência
+  // de troca obrigatória). Na troca obrigatória, senhaAtual pode vir vazia.
+  const trocarSenha = async (senhaAtual, novaSenha) => {
+    await trocarSenhaAPI(senhaAtual, novaSenha);
+    setUser((prev) => {
+      if (!prev) return prev;
+      const atualizado = { ...prev, mustChangePassword: false };
+      localStorage.setItem('dashboard_user', JSON.stringify(atualizado));
+      return atualizado;
+    });
+  };
+
   const logout = async () => {
     try {
       await logoutAPI();
@@ -69,6 +81,7 @@ export const AuthProvider = ({ children }) => {
     user,
     login,
     logout,
+    trocarSenha,
     loading
   };
 

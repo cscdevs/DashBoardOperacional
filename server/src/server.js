@@ -24,8 +24,10 @@ import {
   gerarHashSenha,
   verificarSenha,
   criarSessao,
-  removerSessao
+  removerSessao,
+  SENHA_PADRAO
 } from './auth.js';
+import { lerPerfis, salvarPerfis, criarId } from './perfis.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -269,6 +271,7 @@ app.post('/api/auth/login', async (req, res) => {
         email: user.email,
         role: user.role,
         allowedReports: user.allowedReports,
+        mustChangePassword: user.mustChangePassword === true,
       },
     });
   } catch (err) {
@@ -286,6 +289,47 @@ app.get('/api/auth/me', requerAutenticacao, (req, res) => {
   res.json({ user: req.user });
 });
 
+// Troca de senha do próprio usuário logado.
+// - Troca voluntária (menu de perfil): exige a senha atual.
+// - Troca obrigatória (1º acesso, mustChangePassword=true): dispensa a senha atual.
+app.post('/api/auth/trocar-senha', requerAutenticacao, (req, res) => {
+  const { senhaAtual, novaSenha } = req.body;
+
+  if (!novaSenha || novaSenha.length < 6) {
+    return res.status(400).json({ erro: 'A nova senha deve ter pelo menos 6 caracteres.' });
+  }
+  if (novaSenha === SENHA_PADRAO) {
+    return res.status(400).json({ erro: 'A nova senha não pode ser a senha padrão. Escolha outra.' });
+  }
+
+  try {
+    const usuarios = lerUsuarios();
+    const index = usuarios.findIndex((u) => u.id === req.user.id);
+    if (index === -1) {
+      return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    }
+
+    // Só valida a senha atual quando NÃO for troca obrigatória.
+    if (!usuarios[index].mustChangePassword) {
+      if (!senhaAtual || !verificarSenha(senhaAtual, usuarios[index].password)) {
+        return res.status(400).json({ erro: 'Senha atual incorreta.' });
+      }
+    }
+
+    usuarios[index].password = gerarHashSenha(novaSenha);
+    usuarios[index].mustChangePassword = false;
+    salvarUsuarios(usuarios);
+
+    // Atualiza a sessão ativa em memória para refletir a troca imediatamente.
+    req.user.mustChangePassword = false;
+
+    res.json({ ok: true, mensagem: 'Senha alterada com sucesso.' });
+  } catch (err) {
+    console.error('[auth] Erro ao trocar senha:', err.message);
+    res.status(500).json({ erro: 'Erro ao alterar a senha.' });
+  }
+});
+
 // ---- GESTÃO DE USUÁRIOS (ADMIN ONLY) ----
 app.get('/api/users', requerAutenticacao, requerAdmin, (req, res) => {
   try {
@@ -298,10 +342,10 @@ app.get('/api/users', requerAutenticacao, requerAdmin, (req, res) => {
 });
 
 app.post('/api/users', requerAutenticacao, requerAdmin, (req, res) => {
-  const { name, email, password, role, allowedReports } = req.body;
+  const { name, email, role, allowedReports } = req.body;
 
-  if (!name || !email || !password || !role || !Array.isArray(allowedReports)) {
-    return res.status(400).json({ erro: 'Todos os campos (nome, email, senha, perfil, relatórios) são obrigatórios.' });
+  if (!name || !email || !role || !Array.isArray(allowedReports)) {
+    return res.status(400).json({ erro: 'Nome, e-mail, perfil e relatórios são obrigatórios.' });
   }
 
   try {
@@ -311,13 +355,15 @@ app.post('/api/users', requerAutenticacao, requerAdmin, (req, res) => {
       return res.status(400).json({ erro: 'Este e-mail já está cadastrado.' });
     }
 
+    // Todo novo usuário nasce com a senha padrão e é obrigado a trocá-la no 1º acesso.
     const novoUsuario = {
       id: crypto.randomUUID(),
       name,
       email,
-      password: gerarHashSenha(password),
+      password: gerarHashSenha(SENHA_PADRAO),
       role,
       allowedReports,
+      mustChangePassword: true,
     };
 
     usuarios.push(novoUsuario);
@@ -400,6 +446,101 @@ app.delete('/api/users/:id', requerAutenticacao, requerAdmin, (req, res) => {
   } catch (err) {
     console.error('[users] Erro ao excluir usuário:', err.message);
     res.status(500).json({ erro: 'Erro ao excluir usuário.' });
+  }
+});
+
+// Admin redefine a senha de um usuário para a senha padrão (csc123) e força a
+// troca no próximo acesso. O admin nunca vê a senha real (armazenada em hash).
+app.post('/api/users/:id/redefinir-senha', requerAutenticacao, requerAdmin, (req, res) => {
+  const { id } = req.params;
+  try {
+    const usuarios = lerUsuarios();
+    const index = usuarios.findIndex((u) => u.id === id);
+    if (index === -1) {
+      return res.status(404).json({ erro: 'Usuário não encontrado.' });
+    }
+
+    usuarios[index].password = gerarHashSenha(SENHA_PADRAO);
+    usuarios[index].mustChangePassword = true;
+    salvarUsuarios(usuarios);
+
+    const { password: _, ...safeUser } = usuarios[index];
+    res.json({ ...safeUser, senhaPadrao: SENHA_PADRAO });
+  } catch (err) {
+    console.error('[users] Erro ao redefinir senha:', err.message);
+    res.status(500).json({ erro: 'Erro ao redefinir a senha.' });
+  }
+});
+
+// ---- PERFIS DE ACESSO (ADMIN ONLY) ----
+// Modelos de relatórios reutilizáveis. São COPIADOS para o usuário no momento
+// em que o admin aplica o perfil (modelo de cópia + avulso).
+app.get('/api/perfis', requerAutenticacao, requerAdmin, (req, res) => {
+  try {
+    res.json(lerPerfis());
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao listar perfis.' });
+  }
+});
+
+app.post('/api/perfis', requerAutenticacao, requerAdmin, (req, res) => {
+  const { name, allowedReports } = req.body;
+  if (!name || !name.trim() || !Array.isArray(allowedReports)) {
+    return res.status(400).json({ erro: 'Nome e lista de relatórios são obrigatórios.' });
+  }
+  try {
+    const perfis = lerPerfis();
+    if (perfis.some((p) => p.name.toLowerCase() === name.trim().toLowerCase())) {
+      return res.status(400).json({ erro: 'Já existe um perfil com esse nome.' });
+    }
+    const novo = { id: criarId(), name: name.trim(), allowedReports };
+    perfis.push(novo);
+    salvarPerfis(perfis);
+    res.status(201).json(novo);
+  } catch (err) {
+    console.error('[perfis] Erro ao criar perfil:', err.message);
+    res.status(500).json({ erro: 'Erro ao criar perfil.' });
+  }
+});
+
+app.put('/api/perfis/:id', requerAutenticacao, requerAdmin, (req, res) => {
+  const { id } = req.params;
+  const { name, allowedReports } = req.body;
+  if (!name || !name.trim() || !Array.isArray(allowedReports)) {
+    return res.status(400).json({ erro: 'Nome e lista de relatórios são obrigatórios.' });
+  }
+  try {
+    const perfis = lerPerfis();
+    const index = perfis.findIndex((p) => p.id === id);
+    if (index === -1) {
+      return res.status(404).json({ erro: 'Perfil não encontrado.' });
+    }
+    if (perfis.some((p) => p.name.toLowerCase() === name.trim().toLowerCase() && p.id !== id)) {
+      return res.status(400).json({ erro: 'Já existe outro perfil com esse nome.' });
+    }
+    perfis[index].name = name.trim();
+    perfis[index].allowedReports = allowedReports;
+    salvarPerfis(perfis);
+    res.json(perfis[index]);
+  } catch (err) {
+    console.error('[perfis] Erro ao atualizar perfil:', err.message);
+    res.status(500).json({ erro: 'Erro ao atualizar perfil.' });
+  }
+});
+
+app.delete('/api/perfis/:id', requerAutenticacao, requerAdmin, (req, res) => {
+  const { id } = req.params;
+  try {
+    let perfis = lerPerfis();
+    if (!perfis.some((p) => p.id === id)) {
+      return res.status(404).json({ erro: 'Perfil não encontrado.' });
+    }
+    perfis = perfis.filter((p) => p.id !== id);
+    salvarPerfis(perfis);
+    res.json({ ok: true, mensagem: 'Perfil excluído com sucesso.' });
+  } catch (err) {
+    console.error('[perfis] Erro ao excluir perfil:', err.message);
+    res.status(500).json({ erro: 'Erro ao excluir perfil.' });
   }
 });
 

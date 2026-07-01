@@ -130,10 +130,45 @@ export function fetchMeAPI() {
 }
 
 /**
+ * Troca a senha do próprio usuário logado.
+ * Na troca obrigatória (1º acesso) o backend dispensa a senha atual.
+ */
+export function trocarSenhaAPI(senhaAtual, novaSenha) {
+  return postJSON('/api/auth/trocar-senha', { senhaAtual, novaSenha });
+}
+
+/**
  * Lista todos os usuários cadastrados (Admin only)
  */
 export function fetchUsersAPI() {
   return getJSON('/api/users');
+}
+
+/**
+ * Admin redefine a senha de um usuário para a padrão (csc123) (Admin only)
+ */
+export function redefinirSenhaAPI(id) {
+  return postJSON(`/api/users/${id}/redefinir-senha`);
+}
+
+/* ==========================================================================
+   Perfis de Acesso (modelos de relatórios) — Admin only
+   ========================================================================== */
+
+export function fetchPerfisAPI() {
+  return getJSON('/api/perfis');
+}
+
+export function createPerfilAPI(data) {
+  return postJSON('/api/perfis', data);
+}
+
+export function updatePerfilAPI(id, data) {
+  return putJSON(`/api/perfis/${id}`, data);
+}
+
+export function deletePerfilAPI(id) {
+  return deleteJSON(`/api/perfis/${id}`);
 }
 
 /**

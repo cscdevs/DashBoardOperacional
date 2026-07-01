@@ -9,15 +9,21 @@ import { PostoDescoberto } from './modules/posto-descoberto/PostoDescoberto';
 import { QuadroOperacional } from './modules/quadro-operacional/QuadroOperacional';
 import { Login } from './pages/Login';
 import { Usuarios } from './pages/Usuarios';
+import { TrocarSenhaObrigatoria } from './pages/TrocarSenhaObrigatoria';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
-  
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  
+
+  // Enquanto o usuário estiver na senha padrão, força a troca antes de tudo.
+  if (user.mustChangePassword) {
+    return <TrocarSenhaObrigatoria />;
+  }
+
   return children;
 };
 

@@ -3,6 +3,7 @@ import { LayoutDashboard, LayoutGrid, Settings, Route as RouteIcon, FileText, Ca
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { SpotlightSearch } from './SpotlightSearch';
+import { PerfilMenu } from './PerfilMenu';
 import logo from '../../assets/csc-logo.svg';
 
 const navLinkStyle = ({ isActive }) => ({
@@ -292,6 +293,8 @@ export const AppLayout = () => {
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
+
+            <PerfilMenu />
           </div>
         </header>
 
