@@ -162,8 +162,9 @@ export function Gauge({ valor = 0, cor = 'var(--success)', tamanho = 220, espess
   };
   const arco = (de, ate) => {
     const a = ponto(de), b = ponto(ate);
-    const grande = ate - de > 0.5 ? 1 : 0;
-    return `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} A ${r} ${r} 0 ${grande} 1 ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
+    // Semicírculo (máx. 180°): o arco nunca excede meia-volta, então o
+    // large-arc-flag é sempre 0 (senão desenha pelo caminho longo).
+    return `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} A ${r} ${r} 0 0 1 ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
   };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

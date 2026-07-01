@@ -144,11 +144,10 @@ export const GeracaoCartaoPonto = () => {
     if (demitidosFiltro === 'ativos') l = l.filter((x) => !x.ehDemitido);
     if (demitidosFiltro === 'demitidos') l = l.filter((x) => x.ehDemitido);
     if (empresa) l = l.filter((x) => String(x.empresa ?? '') === empresa);
-    // Regra de negócio: cartões sem gerente no de-para — e os do gerente
-    // "Processo Juridico" — ficam FORA do relatório inteiro (KPIs, gráficos e
-    // tabelas). Assim que a planilha de gerentes for completada (ver
-    // areas-sem-gerente.csv), os sem-gerente voltam a aparecer.
-    l = l.filter((x) => x.gerente && x.gerente !== 'Processo Juridico');
+    // Conta TODAS as folhas geradas — cartões sem gerente aparecem agrupados
+    // como "—". Só descarta os registros "vazios" (sem cliente, sem local e sem
+    // área) — que não têm informação nenhuma para exibir.
+    l = l.filter((x) => x.cliente || x.local || x.areaSupervisao);
     return l;
   }, [registros, demitidosFiltro, empresa]);
 

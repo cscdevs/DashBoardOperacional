@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
-import { Route as RouteIcon, FileText, CalendarClock, ArrowRight } from 'lucide-react';
+import { Route as RouteIcon, FileText, CalendarClock, ShieldAlert, LayoutGrid, ArrowRight } from 'lucide-react';
 
 /** Catálogo de relatórios disponíveis na plataforma. */
 const RELATORIOS = [
@@ -27,6 +27,22 @@ const RELATORIOS = [
       'Geração e retorno dos cartões de ponto por competência — entregues × pendências, com visão geral, detalhamento e por supervisão.',
     icone: CalendarClock,
     rota: '/relatorios/geracao-cartao-ponto',
+    disponivel: true,
+  },
+  {
+    titulo: 'Posto Descoberto — Produtividade',
+    descricao:
+      'Postos não cobertos por dia, por motivo (Cliente → Local → Posto), com filtros de turno, situação e período.',
+    icone: ShieldAlert,
+    rota: '/relatorios/posto-descoberto',
+    disponivel: true,
+  },
+  {
+    titulo: 'Quadro Operacional',
+    descricao:
+      'Contrato × Operacional × PV, Reserva, Excedente, Treinamento e Dobra — matrizes por cliente/empresa e gerente.',
+    icone: LayoutGrid,
+    rota: '/relatorios/quadro-operacional',
     disponivel: true,
   },
 ];

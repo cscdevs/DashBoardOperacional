@@ -102,7 +102,7 @@ function distanciaKm([lat1, lon1], [lat2, lon2]) {
 // iguais tambem casam. Independe do de-para de rotas.
 function mesmoSupervisor(a, b) {
   const norm = (s) =>
-    (s || "").toString().normalize("NFD").replace(/p{Diacritic}/gu, "").replace(/s+/g, " ").trim().toUpperCase();
+    (s || "").toString().normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/\s+/g, " ").trim().toUpperCase();
   const ta = norm(a).split(" ").filter(Boolean);
   const tb = norm(b).split(" ").filter(Boolean);
   if (!ta.length || !tb.length) return false;

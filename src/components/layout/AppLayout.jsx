@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Settings, Route as RouteIcon, FileText, CalendarClock, Bell, Moon, Sun, Menu, LogOut, X, Search, Monitor, Minimize, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, LayoutGrid, Settings, Route as RouteIcon, FileText, CalendarClock, ShieldAlert, Moon, Sun, Menu, LogOut, X, Monitor, Minimize } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { SpotlightSearch } from './SpotlightSearch';
-import { limparCache } from '../../services/api';
 import logo from '../../assets/csc-logo.svg';
 
 const navLinkStyle = ({ isActive }) => ({
@@ -36,6 +35,9 @@ export const AppLayout = () => {
   const fitOuterRef = useRef(null);
   const fitInnerRef = useRef(null);
   const [fitScale, setFitScale] = useState(1);
+  // Deslocamento horizontal para CENTRALIZAR o conteúdo escalado (a sobra
+  // "letterbox" fica simétrica nas laterais). Vertical fica ancorado no topo.
+  const [fitTx, setFitTx] = useState(0);
 
   const { logout, user } = useAuth();
 
@@ -83,6 +85,7 @@ export const AppLayout = () => {
   useEffect(() => {
     if (!isTvMode) {
       setFitScale(1);
+      setFitTx(0);
       return undefined;
     }
     const inner = fitInnerRef.current;
@@ -96,7 +99,10 @@ export const AppLayout = () => {
       const contH = inner.scrollHeight;
       if (!contW || !contH) return;
       // Nunca amplia (máx. 1); só reduz o necessário para caber por inteiro.
-      setFitScale(Math.min(1, dispW / contW, dispH / contH));
+      const s = Math.min(1, dispW / contW, dispH / contH);
+      setFitScale(s);
+      // Centraliza só na horizontal (vertical ancorado no topo).
+      setFitTx(Math.max(0, (dispW - contW * s) / 2));
     };
 
     const ro = new ResizeObserver(recompute);
@@ -109,8 +115,6 @@ export const AppLayout = () => {
       window.removeEventListener('resize', recompute);
     };
   }, [isTvMode]);
-
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
   
@@ -136,19 +140,6 @@ export const AppLayout = () => {
       document.exitFullscreen();
     }
     setIsTvMode(false);
-  };
-
-  // Limpa o cache do backend e recarrega para trazer os dados frescos do banco.
-  const atualizarDados = async () => {
-    if (isRefreshing) return;
-    setIsRefreshing(true);
-    try {
-      await limparCache();
-    } catch (err) {
-      console.error('Falha ao limpar o cache:', err);
-    } finally {
-      window.location.reload();
-    }
   };
 
   return (
@@ -213,6 +204,18 @@ export const AppLayout = () => {
                 Geração de Cartão de Ponto
               </NavLink>
             </li>
+            <li>
+              <NavLink to="/relatorios/posto-descoberto" onClick={closeSidebar} style={navLinkStyle}>
+                <ShieldAlert size={20} />
+                Posto Descoberto
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/relatorios/quadro-operacional" onClick={closeSidebar} style={navLinkStyle}>
+                <LayoutGrid size={20} />
+                Quadro Operacional
+              </NavLink>
+            </li>
           </ul>
         </nav>
 
@@ -245,28 +248,6 @@ export const AppLayout = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }} className="header-actions">
-            {/* Search Button for Spotlight */}
-            <button
-              onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
-              className="btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '24px', padding: '0.4rem 0.8rem', border: '1px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--gray-500)' }}
-              title="Busca Global (Ctrl + K)"
-            >
-              <Search size={16} />
-              <span style={{ fontSize: '0.8rem' }} className="hide-on-mobile">Busca...</span>
-              <kbd style={{ fontSize: '0.7rem', padding: '0.1rem 0.3rem', background: 'var(--white)', borderRadius: '4px', border: '1px solid var(--gray-200)' }} className="hide-on-mobile">Ctrl+K</kbd>
-            </button>
-
-            <button
-              onClick={atualizarDados}
-              disabled={isRefreshing}
-              className="btn-secondary"
-              style={{ borderRadius: '50%', padding: '0.5rem', border: 'none', cursor: isRefreshing ? 'wait' : 'pointer' }}
-              title="Atualizar dados (limpa o cache e recarrega do banco)"
-            >
-              <RefreshCw size={20} style={isRefreshing ? { animation: 'spin 1s linear infinite' } : undefined} />
-            </button>
-
             <button
               onClick={enterTvMode}
               className="btn-secondary"
@@ -284,10 +265,6 @@ export const AppLayout = () => {
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-
-            <button className="btn-secondary" style={{ borderRadius: '50%', padding: '0.5rem', border: 'none' }}>
-              <Bell size={20} />
-            </button>
           </div>
         </header>
 
@@ -301,7 +278,7 @@ export const AppLayout = () => {
           <div
             ref={fitInnerRef}
             className="app-container fade-in"
-            style={isTvMode ? { transform: `scale(${fitScale})`, transformOrigin: 'top center' } : undefined}
+            style={isTvMode ? { transform: `translateX(${fitTx}px) scale(${fitScale})`, transformOrigin: 'top left' } : undefined}
           >
             <Outlet />
           </div>

@@ -9,6 +9,10 @@ import { buscarPosicoesVeiculos, buscarTrajetoVeiculo } from './reports/rotas-su
 import { carregarPontosSupervisores } from './shared/pontos-supervisores.js';
 import { buscarFluxoAtestadosFaltas } from './reports/fluxo-atestados-faltas/fluxo-atestados-faltas.js';
 import { buscarGeracaoCartaoPonto } from './reports/geracao-cartao-ponto/geracao-cartao-ponto.js';
+import { buscarPostoDescoberto } from './reports/posto-descoberto/posto-descoberto.js';
+import { buscarQuadroOperacional } from './reports/quadro-operacional/quadro-operacional.js';
+import { buscarReserva } from './reports/quadro-operacional/reserva.js';
+import { buscarOcorrencias } from './reports/quadro-operacional/ocorrencias.js';
 import { comCache, forcarAtualizacao, aquecer, infoCache } from './cache.js';
 
 const app = express();
@@ -145,6 +149,73 @@ app.get('/api/geracao-cartao-ponto', async (req, res) => {
   }
 });
 
+// ---- Relatório: Posto Descoberto (Produtividade) ----
+// Período via ?dataInicial=YYYY-MM-DD&dataFinal=YYYY-MM-DD (padrão: últimos 7 dias).
+app.get('/api/posto-descoberto', async (req, res) => {
+  const { dataInicial, dataFinal } = req.query;
+  const chave = `posto-descoberto:${dataInicial || 'ini'}:${dataFinal || 'fim'}`;
+  try {
+    const dados = await comCache(chave, () => buscarPostoDescoberto({ dataInicial, dataFinal }));
+    res.json({
+      periodo: dados.periodo,
+      total: dados.registros.length,
+      registros: dados.registros,
+    });
+  } catch (err) {
+    console.error('[api] Erro ao buscar Posto Descoberto:', err.message);
+    res.status(500).json({
+      erro: 'Falha ao consultar o relatório de Posto Descoberto.',
+      detalhe: err.message,
+    });
+  }
+});
+
+// ---- Relatório: Quadro Operacional (Contrato x Operacional x PV) ----
+// Foto do dia (sem parâmetros). 1ª tela do PBI "PV - RS - EXC - TN - DB".
+app.get('/api/quadro-operacional', async (req, res) => {
+  try {
+    const registros = await comCache('quadro-operacional', buscarQuadroOperacional);
+    res.json({ total: registros.length, registros });
+  } catch (err) {
+    console.error('[api] Erro ao buscar Quadro Operacional:', err.message);
+    res.status(500).json({
+      erro: 'Falha ao consultar o relatório de Quadro Operacional.',
+      detalhe: err.message,
+    });
+  }
+});
+
+// ---- Quadro Operacional: aba Reserva (RS) ----
+app.get('/api/quadro-operacional/reserva', async (req, res) => {
+  try {
+    const registros = await comCache('quadro-operacional:reserva', buscarReserva);
+    res.json({ total: registros.length, registros });
+  } catch (err) {
+    console.error('[api] Erro ao buscar Reserva:', err.message);
+    res.status(500).json({
+      erro: 'Falha ao consultar a Reserva.',
+      detalhe: err.message,
+    });
+  }
+});
+
+// ---- Quadro Operacional: Ocorrências (Excedente / Treinamento / Dobra) ----
+// Período via ?dataInicial=YYYY-MM-DD&dataFinal=YYYY-MM-DD (padrão: últimos 7 dias).
+app.get('/api/quadro-operacional/ocorrencias', async (req, res) => {
+  const { dataInicial, dataFinal } = req.query;
+  const chave = `quadro-operacional:ocorrencias:${dataInicial || 'ini'}:${dataFinal || 'fim'}`;
+  try {
+    const dados = await comCache(chave, () => buscarOcorrencias({ dataInicial, dataFinal }));
+    res.json({ periodo: dados.periodo, total: dados.registros.length, registros: dados.registros });
+  } catch (err) {
+    console.error('[api] Erro ao buscar Ocorrências:', err.message);
+    res.status(500).json({
+      erro: 'Falha ao consultar as Ocorrências (Excedente/Treinamento/Dobra).',
+      detalhe: err.message,
+    });
+  }
+});
+
 // ---- Forçar atualização agora (botão "Atualizar") ----
 // Refaz a busca de tudo que está em cache; se o banco estiver fora, mantém o
 // último dado bom (não derruba a tela).
@@ -168,5 +239,9 @@ app.listen(PORT, () => {
   aquecer([
     { chave: 'rotas-supervisao', produtor: lerRotas },
     { chave: 'geracao-cartao-ponto', produtor: buscarGeracaoCartaoPonto },
+    { chave: 'quadro-operacional', produtor: buscarQuadroOperacional },
+    { chave: 'quadro-operacional:reserva', produtor: buscarReserva },
+    // Ocorrências (default 7 dias) — query pesada; aquece para a 1ª abertura ser rápida.
+    { chave: 'quadro-operacional:ocorrencias:ini:fim', produtor: () => buscarOcorrencias({}) },
   ]);
 });

@@ -15,7 +15,6 @@ import {
   Download, Search, Loader2, Calendar,
   Clock, Hourglass, TrendingUp, CheckCircle2, Filter, Printer,
 } from 'lucide-react';
-import { Drawer } from '../../components/ui/Drawer';
 
 /* ------------------------------------------------------------------ */
 /* Configuração de cada aba: dataset, busca, colunas e agregações.     */
@@ -197,7 +196,6 @@ export const FluxoAtestadosFaltas = () => {
   const [filtrosExtra, setFiltrosExtra] = useState({}); // { campo: valor } por aba (Tipo Falta, Empresa, Cliente)
   const [busca, setBusca] = useState('');
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
-  const [linhaSelecionada, setLinhaSelecionada] = useState(null);
   const [detalheModal, setDetalheModal] = useState(null);
 
   const carregar = useCallback(() => {
@@ -481,13 +479,7 @@ export const FluxoAtestadosFaltas = () => {
                 </thead>
                 <tbody>
                   {linhasFiltradas.slice(0, LIMITE_LINHAS).map((l, i) => (
-                    <tr 
-                      key={i} 
-                      onClick={() => setLinhaSelecionada(l)}
-                      style={{ borderBottom: '1px solid var(--gray-100)', cursor: 'pointer', transition: 'background-color 0.2s' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gray-50)'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
+                    <tr key={i} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                       {aba.colunas.map((c) => (
                         <td key={c.titulo} style={{ padding: '0.45rem 0.6rem', color: 'var(--gray-700)', whiteSpace: 'nowrap', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis' }} title={String((c.fmt ? c.fmt(l[c.chave]) : l[c.chave]) ?? '')}>
                           {c.fmt ? c.fmt(l[c.chave]) : (l[c.chave] ?? '')}
@@ -511,45 +503,6 @@ export const FluxoAtestadosFaltas = () => {
         </>
       )}
 
-      {/* Drawer de Detalhamento da Linha (Tabela) */}
-      <Drawer
-        isOpen={!!linhaSelecionada}
-        onClose={() => setLinhaSelecionada(null)}
-        title="Dossiê do Colaborador"
-      >
-        {linhaSelecionada && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ padding: '1.25rem', background: 'var(--blue-50)', borderRadius: '12px', border: '1px solid var(--blue-100)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <h3 style={{ margin: 0, color: 'var(--blue-dark)', fontSize: '1.2rem' }}>{linhaSelecionada.nome || linhaSelecionada.cliente}</h3>
-                  <p style={{ margin: '0.25rem 0 0', color: 'var(--blue)', fontWeight: 600 }} className="mono">RE: {linhaSelecionada.re || '-'}</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  {linhaSelecionada.ehDemitido
-                    ? <span className="status-badge danger"><span className="dot-indicator" /> Demitido</span>
-                    : <span className="status-badge success"><span className="dot-indicator" /> Ativo</span>}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <h4 style={{ margin: 0, color: 'var(--gray-900)', fontSize: '0.95rem', borderBottom: '2px solid var(--gray-100)', paddingBottom: '0.5rem' }}>Informações Registradas</h4>
-              {aba.colunas.map(c => {
-                const valor = c.fmt ? c.fmt(linhaSelecionada[c.chave]) : linhaSelecionada[c.chave];
-                return (
-                  <div key={c.chave} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', alignItems: 'center' }}>
-                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--gray-500)', fontWeight: 500 }}>{c.titulo}</p>
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--gray-900)', fontWeight: 600, wordBreak: 'break-word' }}>
-                      {valor || '-'}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </Drawer>
     </div>
   );
 };

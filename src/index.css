@@ -269,6 +269,29 @@ body {
 .sem-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome/Safari */
 }
+/* No mobile, as matrizes largas (Posto Descoberto, Quadro Operacional, etc.)
+   rolam na horizontal — aí a barra fica VISÍVEL para indicar o swipe, e o scroll
+   por toque fica suave. Também garante que a matriz não estoure a largura da tela. */
+@media (max-width: 768px) {
+  .sem-scrollbar {
+    scrollbar-width: thin !important;
+    -ms-overflow-style: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+  .sem-scrollbar::-webkit-scrollbar {
+    display: block !important;
+    height: 8px;
+    width: 8px;
+  }
+  .sem-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 4px;
+  }
+  .sem-scrollbar::-webkit-scrollbar-track {
+    background: var(--gray-100);
+  }
+}
 
 .responsive-form-group {
   display: flex;
@@ -841,6 +864,18 @@ button {
 }
 .tv-mode-active .layout-content > .app-container {
   width: 100%;
+}
+
+/* No Modo TV nada rola por dentro: as tabelas com rolagem própria (altura fixa
+   + overflow) escondiam linhas atrás de uma barra inacessível na TV. Aqui elas
+   são expandidas para o conteúdo INTEIRO entrar na medição e ser escalado junto
+   (fit-to-screen de verdade). Cobre os relatórios que usam .sem-scrollbar ou
+   overflow-y inline (Fluxo de Atestados, Cartão de Ponto, Posto Descoberto). */
+.tv-mode-active .layout-content [style*="overflow-y: auto"],
+.tv-mode-active .layout-content [style*="overflow-y: scroll"],
+.tv-mode-active .layout-content [style*="overflow: auto"],
+.tv-mode-active .layout-content .sem-scrollbar {
+  max-height: none !important;
 }
 
 .tv-exit-btn {
