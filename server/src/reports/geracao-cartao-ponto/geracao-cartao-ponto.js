@@ -29,7 +29,7 @@ const SQL_PATH = join(__dirname, 'geracao-cartao-ponto.sql');
 /** Normaliza uma linha do SQL para camelCase. */
 function normalizar(row) {
   return {
-    empresa: row.EMPRESA || null,
+    empresa: row.EMPRESA || row.RAZAO_SOCIAL_EMPRESA || null,
     re: row.RE_FUNCIONARIO ?? null,
     nome: row.NOME_FUNCIONARIO || null,
     cliente: row.CLIENTE || null,
@@ -39,7 +39,7 @@ function normalizar(row) {
     anoMes: row.ANOMES ?? null,
     competencia: row.MES_ANO_FORMATADO || null, // 'MM/AAAA'
     situacao: row.SITUACAO || null, // PENDENTE | CONCLUÍDO | CANCELADO | LIDO
-    status: row.STATUS || null, // PENDENTE | CONCLUÍDO (consolidado)
+    status: row.STATUS || (row.SITUACAO === 'CONCLUÍDO' ? 'CONCLUÍDO' : 'PENDENTE'),
     dtGeracao: row.DTGERACAO || null,
     dtRetorno: row.DTRETORNO || null,
     usuarioGeracao: row.USUARIO_GERACAO || null,
@@ -53,13 +53,6 @@ function intervaloAnoAtual() {
   return { ini: `${ano}01`, fim: `${ano}12` };
 }
 
-/**
- * Executa a query (+ demitidos) e devolve os registros normalizados, cada
- * linha já marcada com `ehDemitido`.
- *
- * Por regra de negócio, só o ANO ATUAL é exposto — anos anteriores ficam
- * ocultos (a query filtra por ANOMES no intervalo do ano corrente).
- */
 export async function buscarGeracaoCartaoPonto() {
   const { ini, fim } = intervaloAnoAtual();
   const sql = readFileSync(SQL_PATH, 'utf-8');
@@ -69,5 +62,14 @@ export async function buscarGeracaoCartaoPonto() {
   ]);
   // Enriquece cada linha com `ehDemitido` (RE+Empresa) e `gerente`
   // (Empresa+Cliente+Local+Área, via de-para da planilha do BI).
-  return marcarGerentes(marcarDemitidos(rows.map(normalizar), demitidos));
+  const registros = marcarGerentes(marcarDemitidos(rows.map(normalizar), demitidos));
+
+  // Filtra fora tudo que for de Brasília ou do gerente Luiz Claudio
+  return registros.filter((r) => {
+    const gerenteUpper = String(r.gerente ?? '').toUpperCase();
+    const areaUpper = String(r.areaSupervisao ?? '').toUpperCase();
+    return !gerenteUpper.includes('LUIZ CLAUDIO') && 
+           !areaUpper.includes('BRASILIA') && 
+           !areaUpper.includes('LUIZ CLAUDIO');
+  });
 }

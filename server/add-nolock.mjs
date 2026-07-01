@@ -38,6 +38,6 @@ function processDirectory(directory) {
   }
 }
 
-const targetDir = 'c:/Users/Desenvolvedor-works/Desktop/DashBoards/server/src/reports';
+const targetDir = 'c:/Users/ADM/OneDrive/Desktop/Projetos/03 - Plataforma de Relatórios/DashBoardOperacional/server/src/reports';
 processDirectory(targetDir);
 console.log('All done.');
