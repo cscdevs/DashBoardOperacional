@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, LayoutGrid, Settings, Route as RouteIcon, FileText, CalendarClock, ShieldAlert, Moon, Sun, Menu, LogOut, X, Monitor, Minimize, Users } from 'lucide-react';
+import { LayoutDashboard, LayoutGrid, Settings, Route as RouteIcon, FileText, CalendarClock, ShieldAlert, Moon, Sun, Menu, LogOut, Monitor, Minimize, Users } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { SpotlightSearch } from './SpotlightSearch';
@@ -167,9 +167,6 @@ export const AppLayout = () => {
             <img src={logo} alt="Logo" style={{ height: '32px' }} />
             <h2 style={{ color: 'var(--blue)', fontWeight: 800, margin: 0, fontSize: '1.15rem' }}>Relatórios</h2>
           </div>
-          <button className="mobile-menu-btn" onClick={closeSidebar} style={{ padding: 0 }}>
-            <X size={24} />
-          </button>
         </div>
 
         <nav style={{ flex: 1, padding: '1rem', overflowY: 'auto' }}>
