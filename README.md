@@ -27,6 +27,9 @@ PORT=3001
 CACHE_TTL_SECONDS=30   # 30s = dados "ao vivo"; aumente para aliviar o banco
 DATA_SOURCE=sqlserver  # 'sqlserver' = lê o banco ao vivo | 'supabase' = lê snapshot da nuvem
 
+# Autenticação
+SENHA_PADRAO=csc123    # senha inicial de todo novo usuário (troca obrigatória no 1º acesso)
+
 # Conexão Supabase (Nuvem) — OPCIONAL / LEGADO
 # Só é necessário se usar o motor de sync (DATA_SOURCE=supabase). O deploy atual
 # usa DATA_SOURCE=sqlserver (ao vivo) e NÃO precisa do Supabase.
@@ -97,6 +100,22 @@ node src/sync/gerar-e-enviar.js
 - Visão completa do faturamento e controle de cartões de ponto entregues vs. pendências.
 - Detalhamento progressivo por supervisão.
 
+### Posto Descoberto
+- Postos operacionais sem cobertura, para ação imediata da operação.
+
+### Quadro Operacional
+- Visão consolidada do efetivo, reserva e ocorrências do período.
+
+### Autenticação, Usuários e Perfis de Acesso
+Login por **sessão** (token Bearer) com senhas guardadas em **hash PBKDF2** — nem o admin vê a senha real.
+- **Senha padrão `csc123`** (configurável via `SENHA_PADRAO`): todo novo usuário nasce com ela e é **obrigado a trocá-la no 1º acesso**.
+- **Admin** cadastra/edita/exclui usuários, **redefine a senha para `csc123`** (com selo visual de "senha padrão") e define permissões por relatório.
+- **Perfis de Acesso**: modelos reutilizáveis de relatórios. No cadastro do usuário, o campo **"Perfil de Acesso"** unifica *Administrador · perfis criados · Personalizado* — aplicar um perfil copia seus relatórios (ajustáveis avulso).
+- **Menu do usuário** (avatar com iniciais, no header): trocar a própria senha ou sair.
+- Login aceita **usuário livre** (sem exigir `@`) ou e-mail.
+
+> ⚠️ **Sessões ficam em memória**: reiniciar o backend desloga todos os usuários. A base de usuários (`server/data/users.json`) e os perfis (`server/data/perfis.json`) **não são versionados** (segredo) — em produção, garanta que `server/data/` esteja num volume persistente.
+
 ### Design System "Premium"
 - **Glassmorphism**: Efeitos de vidro fosco em menus e barras laterais.
 - **Animações em Cascata**: Entrada fluída de cartões (Staggered Animations).
@@ -145,19 +164,25 @@ Topologia opcional, hoje usada pelo relatório de Rotas de Supervisão:
 
 ```
 ├── src/                               # Frontend (React + Vite)
-│   ├── components/layout/             # Sidebar, Header, Background dinâmico
+│   ├── components/layout/             # Sidebar, Header, PerfilMenu (avatar), Background
 │   ├── modules/                       # Relatórios isolados por módulo
 │   │   ├── fluxo-atestados-faltas/
 │   │   ├── geracao-cartao-ponto/
+│   │   ├── posto-descoberto/
+│   │   ├── quadro-operacional/
 │   │   └── rotas-supervisao/
-│   ├── pages/                         # Dashboard principal e Login
-│   ├── services/                      # Axios e Helpers de API
+│   ├── context/AuthContext.jsx        # Estado de login (token, usuário, troca de senha)
+│   ├── pages/                         # Dashboard, Login, Usuarios, TrocarSenhaObrigatoria
+│   ├── services/                      # Helpers de API (auth, usuários, perfis, relatórios)
 │   └── index.css                      # Design System (Tokens, Animations)
 ├── server/                            # Backend (Express)
 │   ├── src/db.js                      # Pool MSSQL
+│   ├── src/auth.js                    # Sessões, hash PBKDF2, middlewares de acesso
+│   ├── src/perfis.js                  # Persistência dos perfis de acesso
 │   ├── src/geo/                       # Lógica de fallback de Coordenadas
 │   ├── src/reports/                   # Queries e formatação dos relatórios
 │   ├── src/sync/                      # Motor SQL Server -> Supabase
+│   ├── data/                          # users.json e perfis.json (NÃO versionados)
 │   └── server.js                      # Rotas da API e Cache em Memória
 ├── infra/                             # Provisionamento da máquina interna (provedor de dados)
 │   ├── setup-service.ps1              #   recria o serviço Windows DashboardsAPI (NSSM)
@@ -179,6 +204,11 @@ Topologia opcional, hoje usada pelo relatório de Rotas de Supervisão:
 | `GET /api/fluxo-atestados...` | Dados de atestados com filtro de data (`?dataInicial=...`) |
 | `POST /api/cache/limpar` | Força a renovação do cache em memória do backend |
 | `GET /api/health` | Healthcheck (verifica conexão ao banco baseando-se no `DATA_SOURCE`) |
+| `POST /api/auth/login` · `logout` · `GET /api/auth/me` | Sessão do usuário (token Bearer) |
+| `POST /api/auth/trocar-senha` | Troca a própria senha (dispensa a atual na troca obrigatória) |
+| `GET/POST/PUT/DELETE /api/users` | Gestão de usuários (**admin**) |
+| `POST /api/users/:id/redefinir-senha` | Redefine a senha para `csc123` (**admin**) |
+| `GET/POST/PUT/DELETE /api/perfis` | Gestão de perfis de acesso (**admin**) |
 
 ---
 
@@ -187,6 +217,7 @@ Topologia opcional, hoje usada pelo relatório de Rotas de Supervisão:
 - [x] Acesso externo ao banco interno **ao vivo** via Tailscale (subnet router), sem expor o SQL Server.
 - [x] Deploy da plataforma em **containers** (Docker + Portainer) — ver `docker-compose-prd.yml`.
 - [ ] Wirar **Traefik + basic-auth + HTTPS** na stack de container (hoje publica porta 80 direto).
-- [ ] Autenticação real no app (OAuth2/JWT) substituindo o login mock.
+- [x] Autenticação real no app (sessão + hash PBKDF2, usuários e perfis de acesso) substituindo o login mock.
+- [ ] **Sessões persistentes** (arquivo/JWT) para não deslogar todos a cada reinício do backend.
 - [ ] Criação do agendamento diário automático do motor via *Windows Task Scheduler*.
 - [ ] Rotatividade de credenciais de banco presentes no `.env`.
